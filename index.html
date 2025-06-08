@@ -1,260 +1,282 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html><html lang="en">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backtest Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      background: #f5f7fa;
-      color: #333;
-    }
-    header {
-      background: #4a90e2;
-      color: white;
       padding: 1rem;
+      background: #f5f7fa;
+    }
+    h2 {
       text-align: center;
     }
-    main {
-      padding: 1rem;
-    }
-    form, .actions {
-      margin-bottom: 1rem;
+    .card {
       background: white;
-      padding: 1rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 1rem;
+      margin-bottom: 1rem;
     }
-    label {
-      display: block;
-      margin: 0.5rem 0 0.2rem;
+    .form-group, .stats-controls {
+      margin-bottom: 1rem;
     }
-    input, select, textarea {
-      width: 100%;
+    input, select, button {
       padding: 0.5rem;
-      margin-bottom: 0.5rem;
-      border: 1px solid #ccc;
       border-radius: 4px;
+      border: 1px solid #ccc;
+      width: 100%;
     }
     button {
-      padding: 0.6rem 1rem;
-      margin-right: 0.5rem;
-      background: #4a90e2;
-      border: none;
+      background-color: #007bff;
       color: white;
-      border-radius: 4px;
+      border: none;
       cursor: pointer;
     }
     button:hover {
-      background: #357ABD;
+      background-color: #0056b3;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      margin-top: 1rem;
     }
     th, td {
       padding: 0.5rem;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
       text-align: left;
     }
-    .chart-container {
-      margin: 2rem auto;
-      max-width: 600px;
-    }
   </style>
-</head><body>
-  <header>
-    <h1>Backtest Dashboard</h1>
-  </header>
-  <main>
-    <form id="tradeForm">
-      <label for="pair">Pair</label>
-      <select id="pair" required>
-        <option value="">Select Pair</option>
+</head>
+<body>
+  <h2>Backtest Dashboard</h2>
+  <div class="card">
+    <div class="form-group">
+      <label>Pair:</label>
+      <select id="pair">
+        <option>EURUSD</option>
+        <option>EURCAD</option>
+        <option>GBPUSD</option>
+        <option>US30</option>
+        <option>BTCUSD</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Date:</label>
+      <input type="date" id="date" />
+    </div>
+    <div class="form-group">
+      <label>H4 Direction:</label>
+      <select id="h4Direction">
+        <option>Bullish</option>
+        <option>Bearish</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>H1 Direction:</label>
+      <select id="h1Direction">
+        <option>Bullish</option>
+        <option>Bearish</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Zone Type:</label>
+      <select id="zoneType">
+        <option>Supply</option>
+        <option>Demand</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Entry Price:</label>
+      <input type="number" id="entryPrice" step="0.0001" />
+    </div>
+    <div class="form-group">
+      <label>Stop Loss:</label>
+      <input type="number" id="stopLoss" step="0.0001" />
+    </div>
+    <div class="form-group">
+      <label>Take Profit:</label>
+      <input type="number" id="takeProfit" step="0.0001" />
+    </div>
+    <div class="form-group">
+      <label>Result:</label>
+      <select id="result">
+        <option>Win</option>
+        <option>Loss</option>
+      </select>
+    </div>
+    <button onclick="saveTrade()">Save Trade</button>
+    <input type="file" id="importFile" accept=".csv">
+    <button onclick="importTrades()">Import Trade Data</button>
+    <button onclick="exportTrades()">Export Trade Data as CSV</button>
+  </div>  <div class="card">
+    <h3>Trade Table</h3>
+    <table id="tradeTable">
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>Date</th>
+          <th>H4</th>
+          <th>H1</th>
+          <th>Zone</th>
+          <th>Entry</th>
+          <th>SL</th>
+          <th>TP</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>  <div class="card">
+    <h3>Monthly Statistics</h3>
+    <div class="form-group">
+      <label>Select Pair:</label>
+      <select id="statsPairSelect" onchange="generateStats()">
         <option value="EURUSD">EURUSD</option>
         <option value="EURCAD">EURCAD</option>
         <option value="GBPUSD">GBPUSD</option>
         <option value="US30">US30</option>
         <option value="BTCUSD">BTCUSD</option>
       </select>
-      <label for="h4Direction">H4 Direction</label>
-      <select id="h4Direction">
-        <option value="">Select</option>
-        <option value="Bullish">Bullish</option>
-        <option value="Bearish">Bearish</option>
-      </select>
-      <label for="h1Direction">H1 Direction</label>
-      <select id="h1Direction">
-        <option value="">Select</option>
-        <option value="Bullish">Bullish</option>
-        <option value="Bearish">Bearish</option>
-      </select>
-      <label for="zoneType">Zone Type</label>
-      <select id="zoneType">
-        <option value="">Select</option>
-        <option value="Supply">Supply</option>
-        <option value="Demand">Demand</option>
-      </select>
-      <label for="entryPrice">Entry Price</label>
-      <input type="number" id="entryPrice" step="any" />
-      <label for="stopLoss">Stop Loss</label>
-      <input type="number" id="stopLoss" step="any" />
-      <label for="takeProfit">Take Profit</label>
-      <input type="number" id="takeProfit" step="any" />
-      <label for="slSize">SL Size (Auto)</label>
-      <input type="text" id="slSize" readonly />
-      <label for="rr">Risk to Reward (Auto)</label>
-      <input type="text" id="rr" readonly />
-      <label for="result">Result</label>
-      <select id="result">
-        <option value="Win">Win</option>
-        <option value="Loss">Loss</option>
-        <option value="BE">BE</option>
-      </select>
-      <label for="notes">Notes</label>
-      <textarea id="notes"></textarea>
-      <button type="submit">Save Trade</button>
-    </form><div class="actions">
-  <input type="file" id="importFile" />
-  <button onclick="handleImport()">Import Trade Data</button>
-  <button onclick="exportToCSV()">Export Trade Data as CSV</button>
-</div>
+    </div>
+    <div id="statsContainer"></div>
+    <canvas id="chartCanvas" width="400" height="200"></canvas>
+  </div>  <script>
+    let trades = JSON.parse(localStorage.getItem("trades") || "[]");
 
-<div class="chart-container">
-  <canvas id="resultChart"></canvas>
-</div>
+    function saveTrade() {
+      const trade = {
+        pair: document.getElementById("pair").value,
+        date: document.getElementById("date").value,
+        h4: document.getElementById("h4Direction").value,
+        h1: document.getElementById("h1Direction").value,
+        zone: document.getElementById("zoneType").value,
+        entry: parseFloat(document.getElementById("entryPrice").value),
+        sl: parseFloat(document.getElementById("stopLoss").value),
+        tp: parseFloat(document.getElementById("takeProfit").value),
+        result: document.getElementById("result").value,
+      };
+      trades.push(trade);
+      localStorage.setItem("trades", JSON.stringify(trades));
+      renderTable();
+      generateStats();
+    }
 
-<table>
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Pair</th>
-      <th>H4</th>
-      <th>H1</th>
-      <th>Zone</th>
-      <th>Entry</th>
-      <th>SL</th>
-      <th>TP</th>
-      <th>SL Size</th>
-      <th>RR</th>
-      <th>Result</th>
-      <th>Notes</th>
-    </tr>
-  </thead>
-  <tbody id="tradeTable"></tbody>
-</table>
+    function renderTable() {
+      const tbody = document.querySelector("#tradeTable tbody");
+      tbody.innerHTML = trades.map(t => `
+        <tr>
+          <td>${t.pair}</td>
+          <td>${t.date}</td>
+          <td>${t.h4}</td>
+          <td>${t.h1}</td>
+          <td>${t.zone}</td>
+          <td>${t.entry}</td>
+          <td>${t.sl}</td>
+          <td>${t.tp}</td>
+          <td>${t.result}</td>
+        </tr>
+      `).join("");
+    }
 
-  </main>
-  <script>
-    const tradeForm = document.getElementById("tradeForm");
-    const tradeTable = document.getElementById("tradeTable");
-    const resultChart = document.getElementById("resultChart").getContext("2d");let trades = JSON.parse(localStorage.getItem("trades")) || [];
+    function exportTrades() {
+      let csv = "Pair,Date,H4,H1,Zone,Entry,SL,TP,Result\n";
+      trades.forEach(t => {
+        csv += `${t.pair},${t.date},${t.h4},${t.h1},${t.zone},${t.entry},${t.sl},${t.tp},${t.result}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trades.csv";
+      a.click();
+    }
 
-function updateChart() {
-  const results = { Win: 0, Loss: 0, BE: 0 };
-  trades.forEach(t => results[t.result]++);
-  new Chart(resultChart, {
-    type: "pie",
-    data: {
-      labels: ["Win", "Loss", "BE"],
-      datasets: [{
-        label: "Results",
-        data: [results.Win, results.Loss, results.BE],
-        backgroundColor: ["#4caf50", "#f44336", "#ffeb3b"]
-      }]
-    },
-    options: { responsive: true }
-  });
-}
+    function importTrades() {
+      const file = document.getElementById("importFile").files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        const rows = e.target.result.split("\n").slice(1);
+        rows.forEach(row => {
+          const [pair, date, h4, h1, zone, entry, sl, tp, result] = row.split(",");
+          if (pair && date) {
+            trades.push({ pair, date, h4, h1, zone, entry: +entry, sl: +sl, tp: +tp, result });
+          }
+        });
+        localStorage.setItem("trades", JSON.stringify(trades));
+        renderTable();
+        generateStats();
+      };
+      reader.readAsText(file);
+    }
 
-function updateTable() {
-  tradeTable.innerHTML = trades.map(t => `
-    <tr>
-      <td>${t.date}</td>
-      <td>${t.pair}</td>
-      <td>${t.h4Direction}</td>
-      <td>${t.h1Direction}</td>
-      <td>${t.zoneType}</td>
-      <td>${t.entryPrice}</td>
-      <td>${t.stopLoss}</td>
-      <td>${t.takeProfit}</td>
-      <td>${t.slSize}</td>
-      <td>${t.rr}</td>
-      <td>${t.result}</td>
-      <td>${t.notes}</td>
-    </tr>
-  `).join("");
-}
+    function generateStats() {
+      const selectedPair = document.getElementById("statsPairSelect").value;
+      const filtered = trades.filter(t => t.pair === selectedPair);
+      const byMonth = {};
+      filtered.forEach(t => {
+        const month = t.date.slice(0, 7);
+        if (!byMonth[month]) byMonth[month] = [];
+        byMonth[month].push(t);
+      });
 
-tradeForm.addEventListener("submit", function (e) {
-  e.preventDefault();
-  const entryPrice = parseFloat(document.getElementById("entryPrice").value);
-  const stopLoss = parseFloat(document.getElementById("stopLoss").value);
-  const takeProfit = parseFloat(document.getElementById("takeProfit").value);
-  const slSize = Math.abs(entryPrice - stopLoss).toFixed(2);
-  const rr = ((Math.abs(takeProfit - entryPrice)) / (Math.abs(entryPrice - stopLoss))).toFixed(2);
+      const statsDiv = document.getElementById("statsContainer");
+      statsDiv.innerHTML = "";
+      const labels = [], winCounts = [], lossCounts = [];
 
-  const trade = {
-    date: new Date().toISOString().split("T")[0],
-    pair: document.getElementById("pair").value,
-    h4Direction: document.getElementById("h4Direction").value,
-    h1Direction: document.getElementById("h1Direction").value,
-    zoneType: document.getElementById("zoneType").value,
-    entryPrice,
-    stopLoss,
-    takeProfit,
-    slSize,
-    rr,
-    result: document.getElementById("result").value,
-    notes: document.getElementById("notes").value
-  };
+      Object.entries(byMonth).forEach(([month, arr]) => {
+        const wins = arr.filter(a => a.result === "Win").length;
+        const losses = arr.filter(a => a.result === "Loss").length;
+        const avgRR = (arr.reduce((acc, t) => acc + (t.tp - t.entry) / (t.entry - t.sl), 0) / arr.length).toFixed(2);
+        const bestDay = arr.map(a => new Date(a.date).getDay())
+          .reduce((a, b, i, arr) => arr.filter(x => x === a).length >= arr.filter(x => x === b).length ? a : b);
+        const dayMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        statsDiv.innerHTML += `
+          <div class="card">
+            <strong>${month}</strong><br>
+            Total Trades: ${arr.length}<br>
+            Wins: ${wins}<br>
+            Losses: ${losses}<br>
+            Win Rate: ${(wins / arr.length * 100).toFixed(1)}%<br>
+            Avg R:R: ${avgRR}<br>
+            Best Day: ${dayMap[bestDay]}
+          </div>
+        `;
+        labels.push(month);
+        winCounts.push(wins);
+        lossCounts.push(losses);
+      });
 
-  document.getElementById("slSize").value = slSize;
-  document.getElementById("rr").value = rr;
+      const ctx = document.getElementById('chartCanvas').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Wins',
+              data: winCounts,
+              backgroundColor: 'rgba(75, 192, 192, 0.6)'
+            },
+            {
+              label: 'Losses',
+              data: lossCounts,
+              backgroundColor: 'rgba(255, 99, 132, 0.6)'
+            }
+          ]
+        }
+      });
+    }
 
-  trades.push(trade);
-  localStorage.setItem("trades", JSON.stringify(trades));
-  updateTable();
-  updateChart();
-  tradeForm.reset();
-});
-
-function exportToCSV() {
-  const csv = trades.map(t =>
-    `${t.date},${t.pair},${t.h4Direction},${t.h1Direction},${t.zoneType},${t.entryPrice},${t.stopLoss},${t.takeProfit},${t.slSize},${t.rr},${t.result},${t.notes}`
-  );
-  csv.unshift("Date,Pair,H4,H1,Zone,Entry,SL,TP,SL Size,RR,Result,Notes");
-  const blob = new Blob([csv.join("\n")], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "backtest_data.csv";
-  a.click();
-}
-
-function handleImport() {
-  const fileInput = document.getElementById("importFile");
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const lines = e.target.result.split("\n").slice(1);
-    lines.forEach(line => {
-      const [date, pair, h4Direction, h1Direction, zoneType, entryPrice, stopLoss, takeProfit, slSize, rr, result, notes] = line.split(",");
-      if (date) trades.push({ date, pair, h4Direction, h1Direction, zoneType, entryPrice, stopLoss, takeProfit, slSize, rr, result, notes });
-    });
-    localStorage.setItem("trades", JSON.stringify(trades));
-    updateTable();
-    updateChart();
-  };
-  reader.readAsText(file);
-}
-
-updateTable();
-updateChart();
-
-  </script>
-</body>
+    renderTable();
+    generateStats();
+  </script></body>
 </html>
