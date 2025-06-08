@@ -1,231 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Backtesting Tracker</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Backtest Dashboard</title>
   <style>
-    body { padding: 20px; background: #f8f9fa; }
-    .form-section, .table-section, .chart-section { margin-bottom: 30px; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; display: none; }
+    body { font-family: sans-serif; margin: 0; padding: 1rem; background: #f5f7fa; }
+    h1, h2 { text-align: center; }
+    form, .table-section, .charts-section { margin-bottom: 2rem; }
+    .field { margin-bottom: 1rem; display: flex; flex-direction: column; }
+    label { margin-bottom: 0.3rem; font-weight: bold; }
+    input, select, button { padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; }
+    button { background-color: #4CAF50; color: white; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    .message { color: green; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: center; }
+    .actions { display: flex; gap: 1rem; justify-content: center; }
+    @media(max-width: 600px) {
+      .field { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2 class="mb-4 text-center">📊 Backtesting Tracker</h2>
-
-    <!-- Toast -->
-    <div id="toast" class="toast">Trade Saved!</div>
-
-    <!-- Form Section -->
-    <div class="form-section card p-4 shadow">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Pair</label>
-          <input type="text" id="pair" class="form-control" placeholder="e.g. EURUSD" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">H4 Direction</label>
-          <select id="h4Direction" class="form-select">
-            <option>Bullish</option>
-            <option>Bearish</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">H1 Direction</label>
-          <select id="h1Direction" class="form-select">
-            <option>Bullish</option>
-            <option>Bearish</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Zone Type</label>
-          <select id="zoneType" class="form-select">
-            <option>Demand</option>
-            <option>Supply</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Entry Price</label>
-          <input type="number" id="entry" class="form-control" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Stop Loss</label>
-          <input type="number" id="sl" class="form-control" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Take Profit</label>
-          <input type="number" id="tp" class="form-control" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Date</label>
-          <input type="date" id="date" class="form-control" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Result</label>
-          <select id="result" class="form-select">
-            <option>Win</option>
-            <option>Loss</option>
-            <option>Break-even</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Notes</label>
-          <textarea id="notes" class="form-control"></textarea>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">SL Size (auto)</label>
-          <input type="text" id="slSize" class="form-control" readonly />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">RR Ratio (auto)</label>
-          <input type="text" id="rrRatio" class="form-control" readonly />
-        </div>
-      </div>
-      <button class="btn btn-primary mt-3" onclick="saveTrade()">Save Trade</button>
+  <h1>Backtest Tracker</h1>
+  <form id="tradeForm">
+    <div class="field">
+      <label for="date">Date</label>
+      <input type="date" id="date" required />
     </div>
-
-    <!-- Table Section -->
-    <div class="table-section">
-      <h5 class="mb-3">📄 Trade Records</h5>
-      <input type="date" id="fromDate" class="form-control mb-2 d-inline w-auto" />
-      <input type="date" id="toDate" class="form-control mb-2 d-inline w-auto" />
-      <button class="btn btn-secondary mb-2" onclick="filterTrades()">Filter</button>
-      <button class="btn btn-success mb-2" onclick="exportData()">Export</button>
-      <input type="file" onchange="importData(event)" class="mb-2 d-inline" />
-      <table class="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>Date</th><th>Pair</th><th>H4</th><th>H1</th><th>Zone</th><th>Entry</th><th>SL</th><th>TP</th><th>SL Size</th><th>RR</th><th>Result</th><th>Notes</th>
-          </tr>
-        </thead>
-        <tbody id="tradeTable"></tbody>
-      </table>
+    <div class="field">
+      <label for="pair">Pair</label>
+      <select id="pair" required>
+        <option value="">-- Select Pair --</option>
+        <option>EURUSD</option>
+        <option>EURCAD</option>
+        <option>GBPUSD</option>
+        <option>US30</option>
+        <option>BTCUSD</option>
+      </select>
     </div>
-
-    <!-- Chart Section -->
-    <div class="chart-section card p-4 shadow">
-      <h5>📊 Results Overview</h5>
-      <canvas id="resultsChart" height="100"></canvas>
+    <div class="field">
+      <label for="h4Dir">H4 Direction</label>
+      <select id="h4Dir">
+        <option>Bullish</option>
+        <option>Bearish</option>
+      </select>
     </div>
-  </div>
+    <div class="field">
+      <label for="h1Dir">H1 Direction</label>
+      <select id="h1Dir">
+        <option>Bullish</option>
+        <option>Bearish</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="zone">Zone Type</label>
+      <select id="zone">
+        <option>Demand</option>
+        <option>Supply</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="entry">Entry Price</label>
+      <input type="number" id="entry" required step="0.0001" />
+    </div>
+    <div class="field">
+      <label for="sl">Stop Loss</label>
+      <input type="number" id="sl" required step="0.0001" />
+    </div>
+    <div class="field">
+      <label for="tp">Take Profit</label>
+      <input type="number" id="tp" required step="0.0001" />
+    </div>
+    <div class="field">
+      <label for="slSize">SL Size</label>
+      <input type="text" id="slSize" readonly />
+    </div>
+    <div class="field">
+      <label for="rr">Risk to Reward</label>
+      <input type="text" id="rr" readonly />
+    </div>
+    <div class="field">
+      <label for="result">Trade Result</label>
+      <select id="result">
+        <option>Win</option>
+        <option>Loss</option>
+        <option>Breakeven</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="notes">Notes</label>
+      <input type="text" id="notes" />
+    </div>
+    <button type="submit">Save Trade</button>
+    <p class="message" id="message"></p>
+  </form>  <div class="actions">
+    <button onclick="exportCSV()">Export Trade Data as CSV</button>
+    <input type="file" accept=".csv" onchange="importCSV(event)" />
+  </div>  <div class="table-section">
+    <h2>Trade Records</h2>
+    <table id="tradeTable">
+      <thead>
+        <tr>
+          <th>Date</th><th>Pair</th><th>H4</th><th>H1</th><th>Zone</th><th>Entry</th><th>SL</th><th>TP</th><th>SL Size</th><th>RR</th><th>Result</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>  <script>
+    const form = document.getElementById("tradeForm");
+    const message = document.getElementById("message");
 
-  <script>
-    const showToast = () => {
-      const toast = document.getElementById('toast');
-      toast.style.display = 'block';
-      setTimeout(() => toast.style.display = 'none', 2000);
-    }
-
-    const updateSLAndRR = () => {
-      const entry = parseFloat(document.getElementById('entry').value);
-      const sl = parseFloat(document.getElementById('sl').value);
-      const tp = parseFloat(document.getElementById('tp').value);
+    form.addEventListener("input", () => {
+      const entry = parseFloat(document.getElementById("entry").value);
+      const sl = parseFloat(document.getElementById("sl").value);
+      const tp = parseFloat(document.getElementById("tp").value);
       if (!isNaN(entry) && !isNaN(sl) && !isNaN(tp)) {
-        const slSize = Math.abs(entry - sl).toFixed(2);
+        const slSize = Math.abs(entry - sl).toFixed(4);
         const rr = Math.abs((tp - entry) / (entry - sl)).toFixed(2);
-        document.getElementById('slSize').value = slSize;
-        document.getElementById('rrRatio').value = rr;
+        document.getElementById("slSize").value = slSize;
+        document.getElementById("rr").value = rr;
       }
-    }
-
-    ['entry', 'sl', 'tp'].forEach(id => {
-      document.getElementById(id).addEventListener('input', updateSLAndRR);
     });
 
-    const saveTrade = () => {
+    form.onsubmit = function (e) {
+      e.preventDefault();
       const trade = {
-        date: document.getElementById('date').value,
-        pair: document.getElementById('pair').value,
-        h4: document.getElementById('h4Direction').value,
-        h1: document.getElementById('h1Direction').value,
-        zone: document.getElementById('zoneType').value,
-        entry: parseFloat(document.getElementById('entry').value),
-        sl: parseFloat(document.getElementById('sl').value),
-        tp: parseFloat(document.getElementById('tp').value),
-        slSize: parseFloat(document.getElementById('slSize').value),
-        rr: parseFloat(document.getElementById('rrRatio').value),
-        result: document.getElementById('result').value,
-        notes: document.getElementById('notes').value
+        date: document.getElementById("date").value,
+        pair: document.getElementById("pair").value,
+        h4Dir: document.getElementById("h4Dir").value,
+        h1Dir: document.getElementById("h1Dir").value,
+        zone: document.getElementById("zone").value,
+        entry: document.getElementById("entry").value,
+        sl: document.getElementById("sl").value,
+        tp: document.getElementById("tp").value,
+        slSize: document.getElementById("slSize").value,
+        rr: document.getElementById("rr").value,
+        result: document.getElementById("result").value,
+        notes: document.getElementById("notes").value
       };
-      const data = JSON.parse(localStorage.getItem('trades') || '[]');
-      data.push(trade);
-      localStorage.setItem('trades', JSON.stringify(data));
-      renderTable(data);
-      renderChart(data);
-      showToast();
-    }
 
-    const renderTable = (data) => {
-      const tbody = document.getElementById('tradeTable');
-      tbody.innerHTML = data.map(t => 
-        <tr>
-          <td>${t.date}</td><td>${t.pair}</td><td>${t.h4}</td><td>${t.h1}</td><td>${t.zone}</td>
-          <td>${t.entry}</td><td>${t.sl}</td><td>${t.tp}</td>
-          <td>${t.slSize}</td><td>${t.rr}</td><td>${t.result}</td><td>${t.notes}</td>
-        </tr>
-      ).join('');
-    }
+      let trades = JSON.parse(localStorage.getItem("trades") || "[]");
+      trades.push(trade);
+      localStorage.setItem("trades", JSON.stringify(trades));
+      form.reset();
+      document.getElementById("slSize").value = "";
+      document.getElementById("rr").value = "";
+      message.textContent = "Trade saved!";
+      setTimeout(() => message.textContent = "", 2000);
+      loadTrades();
+    };
 
-    const filterTrades = () => {
-      const from = document.getElementById('fromDate').value;
-      const to = document.getElementById('toDate').value;
-      const all = JSON.parse(localStorage.getItem('trades') || '[]');
-      const filtered = all.filter(t => (!from  t.date >= from) && (!to  t.date <= to));
-      renderTable(filtered);
-      renderChart(filtered);
-    }
-
-    const exportData = () => {
-      const data = localStorage.getItem('trades');
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'backtest_data.json';
-      a.click();
-    }
-
-    const importData = (e) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('trades', reader.result);
-        const data = JSON.parse(reader.result);
-        renderTable(data);
-        renderChart(data);
-      };
-      reader.readAsText(e.target.files[0]);
-    }
-
-    const renderChart = (data) => {
-      const results = { Win: 0, Loss: 0, 'Break-even': 0 };
-      data.forEach(t => results[t.result]++);
-      const ctx = document.getElementById('resultsChart').getContext('2d');
-      if (window.chartInstance) window.chartInstance.destroy();
-      window.chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(results),
-          datasets: [{
-            label: '# of Trades',
-            data: Object.values(results),
-            backgroundColor: ['#198754', '#dc3545', '#ffc107']
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } }
-        }
+    function loadTrades() {
+      const trades = JSON.parse(localStorage.getItem("trades") || "[]");
+      const tbody = document.querySelector("#tradeTable tbody");
+      tbody.innerHTML = "";
+      trades.forEach(t => {
+        const tr = document.createElement("tr");
+        Object.values(t).forEach(v => {
+          const td = document.createElement("td");
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
       });
     }
 
-    window.onload = () => {
-      const data = JSON.parse(localStorage.getItem('trades') || '[]');
-      renderTable(data);
-      renderChart(data);
+    function exportCSV() {
+      const trades = JSON.parse(localStorage.getItem("trades") || "[]");
+      if (!trades.length) return alert("No trades to export");
+      const keys = Object.keys(trades[0]);
+      const rows = trades.map(t => keys.map(k => t[k]).join(","));
+      const csv = [keys.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trades.csv";
+      a.click();
     }
-  </script>
-</body>
+
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.trim().split("\n");
+        const keys = lines[0].split(",");
+        const trades = lines.slice(1).map(line => {
+          const values = line.split(",");
+          const trade = {};
+          keys.forEach((k, i) => trade[k] = values[i]);
+          return trade;
+        });
+        localStorage.setItem("trades", JSON.stringify(trades));
+        loadTrades();
+      };
+      reader.readAsText(file);
+    }
+
+    window.onload = loadTrades;
+  </script></body>
 </html>
