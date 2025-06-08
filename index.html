@@ -5,278 +5,175 @@
   <title>Backtest Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background: #f5f7fa;
-    }
-    h2 {
-      text-align: center;
-    }
-    .card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .form-group, .stats-controls {
-      margin-bottom: 1rem;
-    }
-    input, select, button {
-      padding: 0.5rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      width: 100%;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; color: #333; }
+    .form-container, .dashboard, .stats-section { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin: 10px 0 4px; }
+    input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
+    button { background: #333; color: white; border: none; cursor: pointer; }
+    button:hover { background: #555; }
+    .stats-card { padding: 15px; background: #eee; margin-bottom: 30px; border-radius: 10px; position: relative; }
+    .stats-card h3 { margin: 0 0 10px; }
+    .chart-container { width: 300px; height: 300px; margin: 20px auto; }
+    .export-btn { margin-top: 20px; background: #2c3e50; }
   </style>
 </head>
 <body>
-  <h2>Backtest Dashboard</h2>
-  <div class="card">
-    <div class="form-group">
-      <label>Pair:</label>
-      <select id="pair">
-        <option>EURUSD</option>
-        <option>EURCAD</option>
-        <option>GBPUSD</option>
-        <option>US30</option>
-        <option>BTCUSD</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Date:</label>
-      <input type="date" id="date" />
-    </div>
-    <div class="form-group">
-      <label>H4 Direction:</label>
-      <select id="h4Direction">
-        <option>Bullish</option>
-        <option>Bearish</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>H1 Direction:</label>
-      <select id="h1Direction">
-        <option>Bullish</option>
-        <option>Bearish</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Zone Type:</label>
-      <select id="zoneType">
-        <option>Supply</option>
-        <option>Demand</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Entry Price:</label>
-      <input type="number" id="entryPrice" step="0.0001" />
-    </div>
-    <div class="form-group">
-      <label>Stop Loss:</label>
-      <input type="number" id="stopLoss" step="0.0001" />
-    </div>
-    <div class="form-group">
-      <label>Take Profit:</label>
-      <input type="number" id="takeProfit" step="0.0001" />
-    </div>
-    <div class="form-group">
-      <label>Result:</label>
-      <select id="result">
-        <option>Win</option>
-        <option>Loss</option>
-      </select>
-    </div>
+  <h1>Backtest Dashboard</h1>  <div class="form-container">
+    <label>Pair</label>
+    <select id="pair">
+      <option value="EURUSD">EURUSD</option>
+      <option value="EURCAD">EURCAD</option>
+      <option value="GBPUSD">GBPUSD</option>
+      <option value="US30">US30</option>
+      <option value="BTCUSD">BTCUSD</option>
+    </select>
+    <label>H4 Direction</label>
+    <select id="h4">
+      <option value="Bullish">Bullish</option>
+      <option value="Bearish">Bearish</option>
+    </select>
+    <label>H1 Direction</label>
+    <select id="h1">
+      <option value="Bullish">Bullish</option>
+      <option value="Bearish">Bearish</option>
+    </select>
+    <label>Zone Type</label>
+    <select id="zone">
+      <option value="Supply">Supply</option>
+      <option value="Demand">Demand</option>
+    </select>
+    <label>Entry Price</label>
+    <input type="number" id="entry" step="0.0001">
+    <label>Stop Loss</label>
+    <input type="number" id="sl" step="0.0001">
+    <label>Take Profit</label>
+    <input type="number" id="tp" step="0.0001">
+    <label>Date</label>
+    <input type="date" id="date">
+    <label>Trade Result</label>
+    <select id="result">
+      <option value="Win">Win</option>
+      <option value="Loss">Loss</option>
+    </select>
+    <label>Notes</label>
+    <input type="text" id="notes">
     <button onclick="saveTrade()">Save Trade</button>
-    <input type="file" id="importFile" accept=".csv">
-    <button onclick="importTrades()">Import Trade Data</button>
-    <button onclick="exportTrades()">Export Trade Data as CSV</button>
-  </div>  <div class="card">
-    <h3>Trade Table</h3>
-    <table id="tradeTable">
-      <thead>
-        <tr>
-          <th>Pair</th>
-          <th>Date</th>
-          <th>H4</th>
-          <th>H1</th>
-          <th>Zone</th>
-          <th>Entry</th>
-          <th>SL</th>
-          <th>TP</th>
-          <th>Result</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>  <div class="card">
-    <h3>Monthly Statistics</h3>
-    <div class="form-group">
-      <label>Select Pair:</label>
-      <select id="statsPairSelect" onchange="generateStats()">
-        <option value="EURUSD">EURUSD</option>
-        <option value="EURCAD">EURCAD</option>
-        <option value="GBPUSD">GBPUSD</option>
-        <option value="US30">US30</option>
-        <option value="BTCUSD">BTCUSD</option>
-      </select>
-    </div>
-    <div id="statsContainer"></div>
-    <canvas id="chartCanvas" width="400" height="200"></canvas>
-  </div>  <script>
-    let trades = JSON.parse(localStorage.getItem("trades") || "[]");
+    <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
+  </div>  <div class="stats-section" id="monthlyStats"></div>  <script>
+    let trades = JSON.parse(localStorage.getItem("trades")) || [];
 
     function saveTrade() {
-      const trade = {
-        pair: document.getElementById("pair").value,
-        date: document.getElementById("date").value,
-        h4: document.getElementById("h4Direction").value,
-        h1: document.getElementById("h1Direction").value,
-        zone: document.getElementById("zoneType").value,
-        entry: parseFloat(document.getElementById("entryPrice").value),
-        sl: parseFloat(document.getElementById("stopLoss").value),
-        tp: parseFloat(document.getElementById("takeProfit").value),
-        result: document.getElementById("result").value,
-      };
-      trades.push(trade);
+      const pair = document.getElementById("pair").value;
+      const h4 = document.getElementById("h4").value;
+      const h1 = document.getElementById("h1").value;
+      const zone = document.getElementById("zone").value;
+      const entry = parseFloat(document.getElementById("entry").value);
+      const sl = parseFloat(document.getElementById("sl").value);
+      const tp = parseFloat(document.getElementById("tp").value);
+      const date = document.getElementById("date").value;
+      const result = document.getElementById("result").value;
+      const notes = document.getElementById("notes").value;
+
+      if (!entry || !sl || !tp || !date) return alert("Please fill all fields");
+
+      const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
+      const slSize = Math.abs(sl - entry);
+
+      trades.push({ pair, h4, h1, zone, entry, sl, tp, rr, slSize, date, result, notes });
       localStorage.setItem("trades", JSON.stringify(trades));
-      renderTable();
-      generateStats();
+      alert("Trade saved");
+      renderStats();
     }
 
-    function renderTable() {
-      const tbody = document.querySelector("#tradeTable tbody");
-      tbody.innerHTML = trades.map(t => `
-        <tr>
-          <td>${t.pair}</td>
-          <td>${t.date}</td>
-          <td>${t.h4}</td>
-          <td>${t.h1}</td>
-          <td>${t.zone}</td>
-          <td>${t.entry}</td>
-          <td>${t.sl}</td>
-          <td>${t.tp}</td>
-          <td>${t.result}</td>
-        </tr>
-      `).join("");
+    function exportToCSV() {
+      const headers = Object.keys(trades[0] || {}).join(",");
+      const rows = trades.map(t => Object.values(t).join(","));
+      const csvContent = [headers, ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "trades.csv";
+      link.click();
     }
 
-    function exportTrades() {
-      let csv = "Pair,Date,H4,H1,Zone,Entry,SL,TP,Result\n";
-      trades.forEach(t => {
-        csv += `${t.pair},${t.date},${t.h4},${t.h1},${t.zone},${t.entry},${t.sl},${t.tp},${t.result}\n`;
+    function renderStats() {
+      const statsContainer = document.getElementById("monthlyStats");
+      statsContainer.innerHTML = "";
+      const statsMap = {};
+
+      trades.forEach(trade => {
+        const date = new Date(trade.date);
+        const monthLabel = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
+        const key = `${trade.pair}_${monthLabel}`;
+        if (!statsMap[key]) statsMap[key] = [];
+        statsMap[key].push(trade);
       });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "trades.csv";
-      a.click();
-    }
 
-    function importTrades() {
-      const file = document.getElementById("importFile").files[0];
-      const reader = new FileReader();
-      reader.onload = e => {
-        const rows = e.target.result.split("\n").slice(1);
-        rows.forEach(row => {
-          const [pair, date, h4, h1, zone, entry, sl, tp, result] = row.split(",");
-          if (pair && date) {
-            trades.push({ pair, date, h4, h1, zone, entry: +entry, sl: +sl, tp: +tp, result });
-          }
+      for (let key in statsMap) {
+        const [pair, ...monthArr] = key.split("_");
+        const month = monthArr.join(" ");
+        const data = statsMap[key];
+        const setupCount = data.length;
+        const wins = data.filter(t => t.result === "Win").length;
+        const losses = setupCount - wins;
+        const rrSum = data.reduce((acc, t) => acc + t.rr, 0);
+        const winRate = Math.round((wins / setupCount) * 100);
+
+        const days = {};
+        data.forEach(t => {
+          const weekday = new Date(t.date).toLocaleString('en-US', { weekday: 'long' });
+          if (!days[weekday]) days[weekday] = { total: 0, wins: 0 };
+          days[weekday].total++;
+          if (t.result === "Win") days[weekday].wins++;
         });
-        localStorage.setItem("trades", JSON.stringify(trades));
-        renderTable();
-        generateStats();
-      };
-      reader.readAsText(file);
-    }
 
-    function generateStats() {
-      const selectedPair = document.getElementById("statsPairSelect").value;
-      const filtered = trades.filter(t => t.pair === selectedPair);
-      const byMonth = {};
-      filtered.forEach(t => {
-        const month = t.date.slice(0, 7);
-        if (!byMonth[month]) byMonth[month] = [];
-        byMonth[month].push(t);
-      });
+        let bestDay = "";
+        let maxWinRate = 0;
+        for (let d in days) {
+          const rate = days[d].wins / days[d].total;
+          if (rate > maxWinRate) {
+            maxWinRate = rate;
+            bestDay = d;
+          }
+        }
 
-      const statsDiv = document.getElementById("statsContainer");
-      statsDiv.innerHTML = "";
-      const labels = [], winCounts = [], lossCounts = [];
+        const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
 
-      Object.entries(byMonth).forEach(([month, arr]) => {
-        const wins = arr.filter(a => a.result === "Win").length;
-        const losses = arr.filter(a => a.result === "Loss").length;
-        const avgRR = (arr.reduce((acc, t) => acc + (t.tp - t.entry) / (t.entry - t.sl), 0) / arr.length).toFixed(2);
-        const bestDay = arr.map(a => new Date(a.date).getDay())
-          .reduce((a, b, i, arr) => arr.filter(x => x === a).length >= arr.filter(x => x === b).length ? a : b);
-        const dayMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        statsDiv.innerHTML += `
-          <div class="card">
-            <strong>${month}</strong><br>
-            Total Trades: ${arr.length}<br>
-            Wins: ${wins}<br>
-            Losses: ${losses}<br>
-            Win Rate: ${(wins / arr.length * 100).toFixed(1)}%<br>
-            Avg R:R: ${avgRR}<br>
-            Best Day: ${dayMap[bestDay]}
+        statsContainer.innerHTML += `
+          <div class="stats-card">
+            <h3>${pair} - ${month}</h3>
+            <p><strong>Setups:</strong> ${setupCount}</p>
+            <p><strong>Wins:</strong> ${wins}</p>
+            <p><strong>Win Rate:</strong> ${winRate}%</p>
+            <p><strong>Average R:R:</strong> ${(rrSum / setupCount).toFixed(2)}</p>
+            <p><strong>Best Trading Day:</strong> ${bestDay}</p>
+            <div class="chart-container">
+              <canvas id="${canvasId}"></canvas>
+            </div>
           </div>
         `;
-        labels.push(month);
-        winCounts.push(wins);
-        lossCounts.push(losses);
-      });
 
-      const ctx = document.getElementById('chartCanvas').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Wins',
-              data: winCounts,
-              backgroundColor: 'rgba(75, 192, 192, 0.6)'
+        setTimeout(() => {
+          const ctx = document.getElementById(canvasId).getContext('2d');
+          new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: ['Wins', 'Losses'],
+              datasets: [{
+                data: [wins, losses],
+                backgroundColor: ['#27ae60', '#e74c3c'],
+              }]
             },
-            {
-              label: 'Losses',
-              data: lossCounts,
-              backgroundColor: 'rgba(255, 99, 132, 0.6)'
+            options: {
+              responsive: true,
+              plugins: { legend: { position: 'bottom' } }
             }
-          ]
-        }
-      });
+          });
+        }, 100);
+      }
     }
 
-    renderTable();
-    generateStats();
+    window.onload = renderStats;
   </script></body>
 </html>
