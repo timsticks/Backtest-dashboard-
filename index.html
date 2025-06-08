@@ -2,191 +2,135 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Backtesting Tracker</title>
+  <title>Backtest Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <style>
     body {
-      padding: 1rem;
-      background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
-    .dashboard-card {
-      border-radius: 1rem;
-      box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-      padding: 1rem;
-      margin-bottom: 1rem;
+    input, select, button {
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      width: 100%;
+    }
+    .readonly-field {
+      background: #f0f0f0;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h4 class="mb-3">📊 Backtesting Tracker</h4>
-    <div id="auth-section" class="mb-3">
-      <button class="btn btn-primary" onclick="signInWithGoogle()">Sign in with Google</button>
-      <button class="btn btn-danger" onclick="signOutUser()">Sign Out</button>
-      <p id="user-info" class="mt-2"></p>
-    </div><form id="trade-form" class="mb-4">
-  <div class="row g-2">
-    <div class="col-md-6">
-      <label>Pair</label>
-      <select class="form-select" id="pair">
-        <option>EURUSD</option>
-        <option>EURCAD</option>
-        <option>GBPUSD</option>
-        <option>US30</option>
-        <option>BTCUSD</option>
-      </select>
-    </div>
-    <div class="col-md-6">
-      <label>Date & Time</label>
-      <input type="datetime-local" class="form-control" id="datetime" />
-    </div>
-    <div class="col-md-6">
-      <label>H4 Direction</label>
-      <select class="form-select" id="h4-dir"><option>Buy</option><option>Sell</option></select>
-    </div>
-    <div class="col-md-6">
-      <label>H1 Direction</label>
-      <select class="form-select" id="h1-dir"><option>Buy</option><option>Sell</option></select>
-    </div>
-    <div class="col-md-6">
-      <label>Zone Type</label>
-      <select class="form-select" id="zone-type"><option>Supply</option><option>Demand</option></select>
-    </div>
-    <div class="col-md-6">
-      <label>Entry Price</label>
-      <input type="number" class="form-control" id="entry" />
-    </div>
-    <div class="col-md-6">
-      <label>Stop Loss</label>
-      <input type="number" class="form-control" id="sl" />
-    </div>
-    <div class="col-md-6">
-      <label>Take Profit</label>
-      <input type="number" class="form-control" id="tp" />
-    </div>
-    <div class="col-md-6">
-      <label>SL Size (pips)</label>
-      <input type="number" class="form-control" id="sl-size" />
-    </div>
-    <div class="col-md-6">
-      <label>Risk to Reward</label>
-      <input type="text" class="form-control" id="rr" />
-    </div>
-    <div class="col-md-6">
-      <label>Result</label>
-      <select class="form-select" id="result">
-        <option>Win</option>
-        <option>Loss</option>
-        <option>BE</option>
-      </select>
-    </div>
-    <div class="col-md-12">
-      <label>Notes</label>
-      <textarea class="form-control" id="notes"></textarea>
-    </div>
-  </div>
-  <button type="submit" class="btn btn-success mt-3">Save Trade</button>
-</form>
+  <h1>Backtest Tracker</h1><button id="googleSignIn">Sign in with Google</button>
 
-<div class="d-flex gap-2">
-  <button class="btn btn-outline-primary" onclick="exportCSV()">📤 Export CSV</button>
-  <input type="file" id="importFile" class="form-control w-50" accept=".csv" />
-  <button class="btn btn-outline-secondary" onclick="importCSV()">📥 Import CSV</button>
+  <div id="formSection" style="display: none;">
+    <select id="pair">
+      <option value="">Select Pair</option>
+      <option value="EURUSD">EURUSD</option>
+      <option value="EURCAD">EURCAD</option>
+      <option value="GBPUSD">GBPUSD</option>
+      <option value="US30">US30</option>
+      <option value="BTCUSD">BTCUSD</option>
+    </select>
+    <input type="datetime-local" id="date" />
+    <input type="text" id="h4Dir" placeholder="H4 Direction" />
+    <input type="text" id="h1Dir" placeholder="H1 Direction" />
+    <input type="text" id="zone" placeholder="Zone (H1/15m)" />
+    <input type="number" step="0.01" id="entry" placeholder="Entry Price" />
+    <input type="number" step="0.01" id="sl" placeholder="Stop Loss" />
+    <input type="number" step="0.01" id="tp" placeholder="Take Profit" /><div>
+  <label>SL Size:</label>
+  <div id="slSizeDisplay" class="readonly-field">0</div>
+</div>
+<div>
+  <label>Risk to Reward:</label>
+  <div id="rrDisplay" class="readonly-field">0</div>
 </div>
 
-<hr />
-
-<div class="dashboard-card">
-  <h5>📈 Dashboard Summary</h5>
-  <p>Coming next: per-pair & monthly analytics</p>
-</div>
+<input type="text" id="notes" placeholder="Notes" />
+<select id="result">
+  <option value="">Select Result</option>
+  <option value="win">Win</option>
+  <option value="loss">Loss</option>
+  <option value="BE">Break Even</option>
+</select>
+<button id="saveBtn">Save Trade</button>
 
   </div>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBwyR0ZKURFDUHYOmA8_i1-cZh0hH2bAS8",
       authDomain: "backtest-dashboard-a4e22.firebaseapp.com",
       projectId: "backtest-dashboard-a4e22",
-      storageBucket: "backtest-dashboard-a4e22.firebasestorage.app",
+      storageBucket: "backtest-dashboard-a4e22.appspot.com",
       messagingSenderId: "311553062691",
       appId: "1:311553062691:web:daba5ade180a89d131be96",
       measurementId: "G-86YMM5RRCD"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUser = null;
+    const signInBtn = document.getElementById('googleSignIn');
+    const saveBtn = document.getElementById('saveBtn');
+    const formSection = document.getElementById('formSection');
 
-    function signInWithGoogle() {
+    signInBtn.onclick = () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).then(result => {
-        currentUser = result.user;
-        document.getElementById("user-info").innerText = `Logged in as ${currentUser.displayName}`;
-      });
-    }
+      auth.signInWithPopup(provider)
+        .then(() => {
+          formSection.style.display = 'block';
+          signInBtn.style.display = 'none';
+        })
+        .catch(err => alert(err.message));
+    };
 
-    function signOutUser() {
-      auth.signOut().then(() => {
-        currentUser = null;
-        document.getElementById("user-info").innerText = '';
-        alert("Signed out");
-      });
-    }
-
-    document.getElementById("trade-form").addEventListener("submit", async function (e) {
-      e.preventDefault();
+    saveBtn.onclick = async () => {
       const trade = {
-        pair: pair.value,
-        datetime: datetime.value,
-        h4: h4-dir.value,
-        h1: h1-dir.value,
-        zone: zone-type.value,
-        entry: entry.value,
-        sl: sl.value,
-        tp: tp.value,
-        slSize: sl-size.value,
-        rr: rr.value,
-        result: result.value,
-        notes: notes.value,
+        pair: document.getElementById('pair').value,
+        date: document.getElementById('date').value,
+        h4Dir: document.getElementById('h4Dir').value,
+        h1Dir: document.getElementById('h1Dir').value,
+        zone: document.getElementById('zone').value,
+        entry: parseFloat(document.getElementById('entry').value),
+        sl: parseFloat(document.getElementById('sl').value),
+        tp: parseFloat(document.getElementById('tp').value),
+        notes: document.getElementById('notes').value,
+        result: document.getElementById('result').value,
+        slSize: parseFloat(document.getElementById('slSizeDisplay').textContent),
+        rr: parseFloat(document.getElementById('rrDisplay').textContent),
+        uid: auth.currentUser.uid
       };
-      const trades = JSON.parse(localStorage.getItem("trades") || "[]");
-      trades.push(trade);
-      localStorage.setItem("trades", JSON.stringify(trades));
-      if (currentUser) await db.collection("users").doc(currentUser.uid).collection("trades").add(trade);
-      alert("Trade saved");
-      this.reset();
+
+      try {
+        await db.collection('backtests').add(trade);
+        alert('Trade saved!');
+      } catch (e) {
+        alert('Error saving trade: ' + e.message);
+      }
+    };
+
+    ['entry', 'sl', 'tp'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calculateStats);
     });
 
-    function exportCSV() {
-      const trades = JSON.parse(localStorage.getItem("trades") || "[]");
-      let csv = "Pair,Datetime,H4,H1,Zone,Entry,SL,TP,SL Size,RR,Result,Notes\n";
-      trades.forEach(t => {
-        csv += `${t.pair},${t.datetime},${t.h4},${t.h1},${t.zone},${t.entry},${t.sl},${t.tp},${t.slSize},${t.rr},${t.result},"${t.notes.replace(/\n/g, ' ')}"\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "trades.csv";
-      a.click();
-    }
+    function calculateStats() {
+      const entry = parseFloat(document.getElementById('entry').value);
+      const sl = parseFloat(document.getElementById('sl').value);
+      const tp = parseFloat(document.getElementById('tp').value);
 
-    function importCSV() {
-      const file = document.getElementById("importFile").files[0];
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const lines = e.target.result.split("\n");
-        const imported = lines.slice(1).filter(Boolean).map(line => {
-          const [pair, datetime, h4, h1, zone, entry, sl, tp, slSize, rr, result, notes] = line.split(",");
-          return { pair, datetime, h4, h1, zone, entry, sl, tp, slSize, rr, result, notes };
-        });
-        localStorage.setItem("trades", JSON.stringify(imported));
-        alert("Trades imported");
-      };
-      reader.readAsText(file);
+      if (!isNaN(entry) && !isNaN(sl) && !isNaN(tp)) {
+        const slSize = Math.abs(entry - sl);
+        const rr = Math.abs(tp - entry) / slSize;
+
+        document.getElementById('slSizeDisplay').textContent = slSize.toFixed(2);
+        document.getElementById('rrDisplay').textContent = rr.toFixed(2);
+      }
     }
   </script></body>
 </html>
