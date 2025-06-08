@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Backtesting Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Backtesting Tracker</h1>
+    <form id="tradeForm">
+      <input type="date" id="date" required />
+      <input type="text" id="pair" placeholder="Pair (e.g. EURUSD)" required />
+      <input type="text" id="h4" placeholder="H4 Direction" required />
+      <input type="text" id="h1" placeholder="H1 Direction" required />
+      <input type="text" id="zone" placeholder="Zone (15m or H1)" required />
+      <input type="number" id="entry" placeholder="Entry Price" step="0.0001" required />
+      <input type="number" id="sl" placeholder="Stop Loss Price" step="0.0001" required />
+      <input type="number" id="tp" placeholder="Take Profit Price" step="0.0001" required />
+      <select id="result" required>
+        <option value="">Result</option>
+        <option value="win">Win</option>
+        <option value="loss">Loss</option>
+      </select>
+      <textarea id="notes" placeholder="Notes..."></textarea>
+      <button type="submit">Save Trade</button>
+    </form>
+    <button id="exportBtn">Export</button>
+    <input type="file" id="importBtn" />
+    <input type="date" id="startDate" />
+    <input type="date" id="endDate" />
+    <button id="filterBtn">Filter</button>
+    <canvas id="charts" width="400" height="200"></canvas>
+    <div id="summary"></div>
+    <table id="tradeTable">
+      <thead>
+        <tr>
+          <th>Date</th><th>Pair</th><th>Result</th><th>RR</th><th>SL Size</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
