@@ -1,50 +1,227 @@
-
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backtesting Tracker</title>
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #f5f7fa; font-family: 'Segoe UI', sans-serif; }
+    .card { box-shadow: 0 0 12px rgba(0, 0, 0, 0.05); }
+    .table-responsive { max-height: 400px; overflow-y: auto; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Backtesting Tracker</h1>
-    <form id="tradeForm">
-      <input type="date" id="date" required />
-      <input type="text" id="pair" placeholder="Pair (e.g. EURUSD)" required />
-      <input type="text" id="h4" placeholder="H4 Direction" required />
-      <input type="text" id="h1" placeholder="H1 Direction" required />
-      <input type="text" id="zone" placeholder="Zone (15m or H1)" required />
-      <input type="number" id="entry" placeholder="Entry Price" step="0.0001" required />
-      <input type="number" id="sl" placeholder="Stop Loss Price" step="0.0001" required />
-      <input type="number" id="tp" placeholder="Take Profit Price" step="0.0001" required />
-      <select id="result" required>
-        <option value="">Result</option>
-        <option value="win">Win</option>
-        <option value="loss">Loss</option>
-      </select>
-      <textarea id="notes" placeholder="Notes..."></textarea>
-      <button type="submit">Save Trade</button>
-    </form>
-    <button id="exportBtn">Export</button>
-    <input type="file" id="importBtn" />
-    <input type="date" id="startDate" />
-    <input type="date" id="endDate" />
-    <button id="filterBtn">Filter</button>
-    <canvas id="charts" width="400" height="200"></canvas>
-    <div id="summary"></div>
-    <table id="tradeTable">
-      <thead>
+  <div class="container py-4">
+    <h2 class="text-center mb-4">📈 Backtesting Tracker</h2><div class="card p-4 mb-4">
+  <form id="tradeForm">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Pair</label>
+        <select class="form-select" id="pair">
+          <option>EURUSD</option>
+          <option>EURCAD</option>
+          <option>GBPUSD</option>
+          <option>US30</option>
+          <option>BTCUSD</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Trade Type</label>
+        <select class="form-select" id="type">
+          <option>Buy</option>
+          <option>Sell</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Entry Price</label>
+        <input type="number" class="form-control" id="entry" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Stop Loss</label>
+        <input type="number" class="form-control" id="sl" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Take Profit</label>
+        <input type="number" class="form-control" id="tp" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">SL Size (Auto)</label>
+        <input type="text" class="form-control" id="slSize" readonly />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">RR (Auto)</label>
+        <input type="text" class="form-control" id="rr" readonly />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Result</label>
+        <select class="form-select" id="result">
+          <option>Win</option>
+          <option>Loss</option>
+          <option>BE</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">H4 Direction</label>
+        <input type="text" class="form-control" id="h4" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">H1 Direction</label>
+        <input type="text" class="form-control" id="h1" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Zone Type</label>
+        <input type="text" class="form-control" id="zone" />
+      </div>
+      <div class="col-12">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="notes"></textarea>
+      </div>
+      <div class="col-6">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="date" />
+      </div>
+      <div class="col-6">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-control" id="time" />
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">Save Trade</button>
+        <button type="button" class="btn btn-outline-secondary" onclick="exportData()">Export</button>
+        <input type="file" class="form-control d-inline-block w-auto" onchange="importData(event)" />
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card p-4 mb-4">
+  <h5>📆 Filter by Date</h5>
+  <div class="row g-2 mb-3">
+    <div class="col">
+      <input type="date" class="form-control" id="fromDate" />
+    </div>
+    <div class="col">
+      <input type="date" class="form-control" id="toDate" />
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-success" onclick="filterData()">Apply</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
         <tr>
-          <th>Date</th><th>Pair</th><th>Result</th><th>RR</th><th>SL Size</th>
+          <th>Date</th><th>Time</th><th>Pair</th><th>Type</th><th>Entry</th>
+          <th>SL</th><th>TP</th><th>SL Size</th><th>RR</th><th>Result</th>
+          <th>Notes</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="tradeTable"></tbody>
     </table>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="script.js"></script>
-</body>
+</div>
+
+<div class="card p-4">
+  <h5>📊 Charts Overview</h5>
+  <canvas id="winRateChart" height="100"></canvas>
+</div>
+
+  </div>  <script>
+    let trades = JSON.parse(localStorage.getItem('trades') || '[]');
+
+    document.getElementById('tradeForm').addEventListener('submit', e => {
+      e.preventDefault();
+
+      const entry = parseFloat(document.getElementById('entry').value);
+      const sl = parseFloat(document.getElementById('sl').value);
+      const tp = parseFloat(document.getElementById('tp').value);
+      const slSize = Math.abs(entry - sl);
+      const rr = Math.abs(tp - entry) / slSize;
+
+      const trade = {
+        pair: document.getElementById('pair').value,
+        type: document.getElementById('type').value,
+        entry, sl, tp, slSize, rr: rr.toFixed(2),
+        result: document.getElementById('result').value,
+        h4: document.getElementById('h4').value,
+        h1: document.getElementById('h1').value,
+        zone: document.getElementById('zone').value,
+        notes: document.getElementById('notes').value,
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value
+      };
+
+      trades.push(trade);
+      localStorage.setItem('trades', JSON.stringify(trades));
+      renderTable(trades);
+      renderCharts();
+      e.target.reset();
+      document.getElementById('slSize').value = slSize;
+      document.getElementById('rr').value = rr.toFixed(2);
+    });
+
+    function renderTable(data) {
+      const table = document.getElementById('tradeTable');
+      table.innerHTML = data.map(t => 
+        <tr>
+          <td>${t.date}</td><td>${t.time}</td><td>${t.pair}</td><td>${t.type}</td>
+          <td>${t.entry}</td><td>${t.sl}</td><td>${t.tp}</td><td>${t.slSize}</td>
+          <td>${t.rr}</td><td>${t.result}</td><td>${t.notes}</td>
+        </tr>).join('');
+    }
+
+    function renderCharts() {
+      const wins = trades.filter(t => t.result === 'Win').length;
+      const losses = trades.filter(t => t.result === 'Loss').length;
+      const be = trades.filter(t => t.result === 'BE').length;
+
+      new Chart(document.getElementById('winRateChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Wins', 'Losses', 'Break Even'],
+          datasets: [{
+            data: [wins, losses, be],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+          }]
+        }
+      });
+    }
+
+    function filterData() {
+      const from = new Date(document.getElementById('fromDate').value);
+      const to = new Date(document.getElementById('toDate').value);
+      const filtered = trades.filter(t => {
+        const d = new Date(t.date);
+        return (!isNaN(from) ? d >= from : true) && (!isNaN(to) ? d <= to : true);
+      });
+      renderTable(filtered);
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(trades)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'trades.json';
+      a.click();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        trades = JSON.parse(evt.target.result);
+        localStorage.setItem('trades', JSON.stringify(trades));
+        renderTable(trades);
+        renderCharts();
+      };
+      reader.readAsText(file);
+    }
+
+    // Init
+    renderTable(trades);
+    renderCharts();
+  </script></body>
 </html>
