@@ -33,6 +33,27 @@
           <option>Sell</option>
         </select>
       </div>
+      <div class="col-md-4">
+        <label class="form-label">H4 Direction</label>
+        <select class="form-select" id="type">
+          <option>Bullish</option>
+          <option>Bearish</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">H1 Direction</label>
+        <select class="form-select" id="type">
+          <option>Bullish</option>
+          <option>Bearish</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Zone Type</label>
+        <select class="form-select" id="type">
+          <option>Supply</option>
+          <option>Demand</option>
+        </select>
+      </div>
       <div class="col-md-3">
         <label class="form-label">Entry Price</label>
         <input type="number" class="form-control" id="entry" />
@@ -61,18 +82,7 @@
           <option>BE</option>
         </select>
       </div>
-      <div class="col-md-4">
-        <label class="form-label">H4 Direction</label>
-        <input type="text" class="form-control" id="h4" />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">H1 Direction</label>
-        <input type="text" class="form-control" id="h1" />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Zone Type</label>
-        <input type="text" class="form-control" id="zone" />
-      </div>
+      
       <div class="col-12">
         <label class="form-label">Notes</label>
         <textarea class="form-control" id="notes"></textarea>
@@ -95,7 +105,7 @@
 </div>
 
 <div class="card p-4 mb-4">
-  <h5>📆 Filter by Date</h5>
+  <h5>📆 Filter Trades by Date</h5>
   <div class="row g-2 mb-3">
     <div class="col">
       <input type="date" class="form-control" id="fromDate" />
