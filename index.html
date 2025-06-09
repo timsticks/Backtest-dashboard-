@@ -12,6 +12,10 @@
     input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
     button { background: #333; color: white; border: none; cursor: pointer; }
     button:hover { background: #555; }
+    .table { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: center; }
+    .message { color: green; font-weight: bold; }
     .stats-card { padding: 15px; background: #eee; margin-bottom: 30px; border-radius: 10px; position: relative; }
     .stats-card h3 { margin: 0 0 10px; }
     .chart-container { width: 300px; height: 300px; margin: 20px auto; }
@@ -70,7 +74,7 @@
 
   </div>  
 
-  <div>
+  <div class="table">
     <!-- Filters -->
     <div class="filters">
       <label>Filter by Pair:</label>
