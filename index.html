@@ -19,7 +19,8 @@
   </style>
 </head>
 <body>
-  <h1>Backtest Dashboard</h1>  <div class="form-container">
+  <h1>Backtest Dashboard</h1>  
+  <div class="form-container">
     <label>Pair</label>
     <select id="pair">
       <option value="EURUSD">EURUSD</option>
@@ -28,6 +29,8 @@
       <option value="US30">US30</option>
       <option value="BTCUSD">BTCUSD</option>
     </select>
+    <label>Date</label>
+    <input type="date" id="date">
     <label>H4 Direction</label>
     <select id="h4">
       <option value="Bullish">Bullish</option>
@@ -49,8 +52,7 @@
     <input type="number" id="sl" step="0.0001">
     <label>Take Profit</label>
     <input type="number" id="tp" step="0.0001">
-    <label>Date</label>
-    <input type="date" id="date">
+    
     <label>Trade Result</label>
     <select id="result">
       <option value="Win">Win</option>
@@ -59,8 +61,55 @@
     <label>Notes</label>
     <input type="text" id="notes">
     <button onclick="saveTrade()">Save Trade</button>
-    <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
-  </div>  <div class="stats-section" id="monthlyStats"></div>  <script>
+    <!-- Import & Export -->
+    <div class="import-export">
+    <input type="file" id="import-file" accept=".csv" />
+    <button onclick="importCSV()">Import Trade Data</button>
+    <button onclick="exportToCSV()">Export Trade Data as CSV</button>
+  </div>
+
+  </div>  
+
+  <div>
+    <!-- Filters -->
+    <div class="filters">
+      <label>Filter by Pair:</label>
+      <select id="filter-pair" onchange="filterTable()">
+        <option value="all">All</option>
+        <option value="EURUSD">EURUSD</option>
+        <option value="EURCAD">EURCAD</option>
+        <option value="GBPUSD">GBPUSD</option>
+        <option value="US30">US30</option>
+        <option value="BTCUSD">BTCUSD</option>
+      </select>
+    </div>
+    
+    <!-- Trade Table -->
+    <table id="trade-table">
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>H4</th>
+          <th>H1</th>
+          <th>Zone</th>
+          <th>Date</th>
+          <th>Entry</th>
+          <th>SL</th>
+          <th>TP</th>
+          <th>SL Size</th>
+          <th>RR</th>
+          <th>Result</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+  </div>
+
+  
+  <div class="stats-section" id="monthlyStats"></div>  
+  <script>
     let trades = JSON.parse(localStorage.getItem("trades")) || [];
 
     function saveTrade() {
@@ -96,6 +145,30 @@
       link.download = "trades.csv";
       link.click();
     }
+
+    function importCSV() { 
+      const fileInput = document.getElementById("import-file"); 
+      const reader = new FileReader(); 
+      reader.onload = function(e) { 
+        const lines = e.target.result.split("\n").slice(1); 
+        lines.forEach(line => { 
+          const [pair, h4, h1, zone, date, entry, sl, tp, slSize, rr, result, notes] = line.split(","); 
+          if (pair) trades.push({ pair, h4, h1, zone, date, entry, sl, tp, slSize, rr, result, notes }); 
+        }); 
+        saveTradesToStorage(); 
+        renderTable(); 
+      }; 
+      reader.readAsText(fileInput.files[0]);
+    }
+
+    function filterTable() { 
+      const filter = document.getElementById("filter-pair").value; 
+      const filtered = filter === "all" ? trades : trades.filter(t => t.pair === filter); 
+      renderTable(filtered); 
+    }
+
+
+    
 
     function renderStats() {
       const statsContainer = document.getElementById("monthlyStats");
