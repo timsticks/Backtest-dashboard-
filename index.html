@@ -1,5 +1,4 @@
-<!DOCTYPE html><html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backtest Dashboard</title>
@@ -7,113 +6,105 @@
   <style>
     body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
     h1 { text-align: center; color: #333; }
-    .form-container, .dashboard, .stats-section { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .form-container, .dashboard, .stats-section, .table-section { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
     label { display: block; margin: 10px 0 4px; }
-    input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
-    button { background: #333; color: white; border: none; cursor: pointer; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
+    button { background: #333; color: white; border: none; cursor: pointer; margin-top: 10px; }
     button:hover { background: #555; }
-    .table { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: center; }
-    .message { color: green; font-weight: bold; }
-    .stats-card { padding: 15px; background: #eee; margin-bottom: 30px; border-radius: 10px; position: relative; }
+    .stats-card { padding: 15px; background: #eee; margin-bottom: 30px; border-radius: 10px; width: calc(50% - 10px); display: inline-block; vertical-align: top; box-sizing: border-box; }
     .stats-card h3 { margin: 0 0 10px; }
-    .chart-container { width: 300px; height: 300px; margin: 20px auto; }
-    .export-btn { margin-top: 20px; background: #2c3e50; }
+    .chart-container { width: 100%; height: 300px; margin-top: 20px; }
+    .export-btn, .import-btn { background: #2c3e50; margin-top: 10px; }
+    .scrollable-table { overflow-x: auto; overflow-y: auto; max-height: 400px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; }
+    th { background: #f0f0f0; }
+    .filter-row { display: flex; gap: 10px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <h1>Backtest Dashboard</h1>  
+  <h1>Backtest Dashboard</h1>
   <div class="form-container">
-    <label>Pair</label>
-    <select id="pair">
-      <option value="EURUSD">EURUSD</option>
-      <option value="EURCAD">EURCAD</option>
-      <option value="GBPUSD">GBPUSD</option>
-      <option value="US30">US30</option>
-      <option value="BTCUSD">BTCUSD</option>
-    </select>
-    <label>Date</label>
-    <input type="date" id="date">
-    <label>H4 Direction</label>
-    <select id="h4">
-      <option value="Bullish">Bullish</option>
-      <option value="Bearish">Bearish</option>
-    </select>
-    <label>H1 Direction</label>
-    <select id="h1">
-      <option value="Bullish">Bullish</option>
-      <option value="Bearish">Bearish</option>
-    </select>
-    <label>Zone Type</label>
-    <select id="zone">
-      <option value="Supply">Supply</option>
-      <option value="Demand">Demand</option>
-    </select>
-    <label>Entry Price</label>
-    <input type="number" id="entry" step="0.0001">
-    <label>Stop Loss</label>
-    <input type="number" id="sl" step="0.0001">
-    <label>Take Profit</label>
-    <input type="number" id="tp" step="0.0001">
-    
-    <label>Trade Result</label>
-    <select id="result">
-      <option value="Win">Win</option>
-      <option value="Loss">Loss</option>
-    </select>
-    <label>Notes</label>
-    <input type="text" id="notes">
+    <div class="form-grid">
+      <div>
+        <label>Pair</label>
+        <select id="pair">
+          <option value="EURUSD">EURUSD</option>
+          <option value="EURCAD">EURCAD</option>
+          <option value="GBPUSD">GBPUSD</option>
+          <option value="US30">US30</option>
+          <option value="BTCUSD">BTCUSD</option>
+        </select>
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label>H4 Direction</label>
+        <select id="h4">
+          <option value="Bullish">Bullish</option>
+          <option value="Bearish">Bearish</option>
+        </select>
+      </div>
+      <div>
+        <label>H1 Direction</label>
+        <select id="h1">
+          <option value="Bullish">Bullish</option>
+          <option value="Bearish">Bearish</option>
+        </select>
+      </div>
+      <div>
+        <label>Zone Type</label>
+        <select id="zone">
+          <option value="Supply">Supply</option>
+          <option value="Demand">Demand</option>
+        </select>
+      </div>
+      <div>
+        <label>Entry Price</label>
+        <input type="number" id="entry" step="0.0001">
+      </div>
+      <div>
+        <label>Stop Loss</label>
+        <input type="number" id="sl" step="0.0001">
+      </div>
+      <div>
+        <label>Take Profit</label>
+        <input type="number" id="tp" step="0.0001">
+      </div>
+      <div>
+        <label>Trade Result</label>
+        <select id="result">
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+        </select>
+      </div>
+      <div>
+        <label>Notes</label>
+        <input type="text" id="notes">
+      </div>
+    </div>
     <button onclick="saveTrade()">Save Trade</button>
-    <!-- Import & Export -->
-    <div class="import-export">
-    <input type="file" id="import-file" accept=".csv" />
-    <button onclick="importCSV()">Import Trade Data</button>
-    <button onclick="exportToCSV()">Export Trade Data as CSV</button>
-  </div>
-
-  </div>  
-
-  <div class="table">
-    <!-- Filters -->
-    <div class="filters">
-      <label>Filter by Pair:</label>
-      <select id="filter-pair" onchange="filterTable()">
-        <option value="all">All</option>
+    <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
+    <input type="file" accept=".csv" class="import-btn" onchange="importCSV(event)" />
+  </div>  <div class="stats-section" id="monthlyStats"></div>  <div class="table-section">
+    <div class="filter-row">
+      <select id="filterPair" onchange="renderTable()">
+        <option value="">All Pairs</option>
         <option value="EURUSD">EURUSD</option>
         <option value="EURCAD">EURCAD</option>
         <option value="GBPUSD">GBPUSD</option>
         <option value="US30">US30</option>
         <option value="BTCUSD">BTCUSD</option>
       </select>
+      <input type="date" id="filterDate" onchange="renderTable()" />
     </div>
-    
-    <!-- Trade Table -->
-    <table id="trade-table">
-      <thead>
-        <tr>
-          <th>Pair</th>
-          <th>H4</th>
-          <th>H1</th>
-          <th>Zone</th>
-          <th>Date</th>
-          <th>Entry</th>
-          <th>SL</th>
-          <th>TP</th>
-          <th>SL Size</th>
-          <th>RR</th>
-          <th>Result</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-  </div>
-
-  
-  <div class="stats-section" id="monthlyStats"></div>  
-  <script>
+    <div class="scrollable-table">
+      <table id="tradeTable"></table>
+    </div>
+  </div>  <script>
     let trades = JSON.parse(localStorage.getItem("trades")) || [];
 
     function saveTrade() {
@@ -137,10 +128,12 @@
       localStorage.setItem("trades", JSON.stringify(trades));
       alert("Trade saved");
       renderStats();
+      renderTable();
     }
 
     function exportToCSV() {
-      const headers = Object.keys(trades[0] || {}).join(",");
+      if (!trades.length) return;
+      const headers = Object.keys(trades[0]).join(",");
       const rows = trades.map(t => Object.values(t).join(","));
       const csvContent = [headers, ...rows].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -150,29 +143,42 @@
       link.click();
     }
 
-    function importCSV() { 
-      const fileInput = document.getElementById("import-file"); 
-      const reader = new FileReader(); 
-      reader.onload = function(e) { 
-        const lines = e.target.result.split("\n").slice(1); 
-        lines.forEach(line => { 
-          const [pair, h4, h1, zone, date, entry, sl, tp, slSize, rr, result, notes] = line.split(","); 
-          if (pair) trades.push({ pair, h4, h1, zone, date, entry, sl, tp, slSize, rr, result, notes }); 
-        }); 
-        saveTradesToStorage(); 
-        renderTable(); 
-      }; 
-      reader.readAsText(fileInput.files[0]);
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split("\n");
+        const keys = lines[0].split(",");
+        const importedTrades = lines.slice(1).map(line => {
+          const values = line.split(",");
+          const trade = {};
+          keys.forEach((k, i) => trade[k] = isNaN(values[i]) ? values[i] : parseFloat(values[i]));
+          return trade;
+        });
+        trades = trades.concat(importedTrades);
+        localStorage.setItem("trades", JSON.stringify(trades));
+        renderStats();
+        renderTable();
+      };
+      reader.readAsText(file);
     }
 
-    function filterTable() { 
-      const filter = document.getElementById("filter-pair").value; 
-      const filtered = filter === "all" ? trades : trades.filter(t => t.pair === filter); 
-      renderTable(filtered); 
+    function renderTable() {
+      const table = document.getElementById("tradeTable");
+      const filterPair = document.getElementById("filterPair").value;
+      const filterDate = document.getElementById("filterDate").value;
+      const filtered = trades.filter(t => (!filterPair || t.pair === filterPair) && (!filterDate || t.date === filterDate));
+
+      if (filtered.length === 0) {
+        table.innerHTML = "<tr><td>No data</td></tr>";
+        return;
+      }
+
+      const headers = Object.keys(filtered[0]);
+      table.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>` +
+        filtered.map(t => `<tr>${headers.map(h => `<td>${t[h]}</td>`).join('')}</tr>`).join('');
     }
-
-
-    
 
     function renderStats() {
       const statsContainer = document.getElementById("monthlyStats");
@@ -251,6 +257,9 @@
       }
     }
 
-    window.onload = renderStats;
+    window.onload = function() {
+      renderStats();
+      renderTable();
+    };
   </script></body>
 </html>
