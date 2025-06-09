@@ -13,7 +13,7 @@
       input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }  
       button { background: #007bff; color: white; border: none; cursor: pointer; }  
       button:hover { background: #0056b3; }  
-      .stats-card { padding: 15px; background: #eee; margin: 10px; border-radius: 10px; width: 48%; display: inline-block; vertical-align: top; }  
+      .stats-card { padding: 15px; background: #eee; margin: 10px; border-radius: 10px; }  
       .stats-card h3 { margin: 0 0 10px; }  
       .chart-container { width: 100%; height: 300px; }  
       .export-section { margin-top: 20px; padding: 20px; border-top: 2px solid #ddd; }  
@@ -65,6 +65,20 @@
         display: none;
       }
       .filter-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 15px;
+      }
+      .stats-card {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
@@ -142,15 +156,15 @@
         </div>
       </div>
       
-      <!-- 1. SL Size and Risk:Reward Display -->
+      <!-- SL Size and Risk:Reward Display -->
       <div class="risk-metrics" id="riskMetrics" style="display: none;">
         <div>
-          <div>SL Size (pips)</div>
+          <div id="slLabel">SL Size (pips)</div>
           <div class="metric-value" id="slSizeDisplay">0.00</div>
         </div>
         <div>
           <div>Risk:Reward</div>
-          <div class="metric-value" id="rrDisplay">0.00</div>
+          <div class="metric-value" id="rrDisplay">0:0</div>
         </div>
       </div>
       
@@ -161,12 +175,10 @@
       <input type="file" id="csvFile" accept=".csv">
       <button onclick="importFromCSV()">Import CSV</button>
       <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
-      
-      <!-- 2. Success Message for CSV Imports -->
       <div class="success-message" id="importSuccess">CSV imported successfully!</div>
     </div>
 
-    <!-- 3. Trade Filtering -->
+    <!-- Trade Filtering -->
     <div class="filters">
       <div>
         <label>Pair</label>
@@ -201,7 +213,9 @@
       </div>
     </div>
 
-    <div class="stats-section" id="monthlyStats"></div>
+    <div class="stats-section">
+      <div id="monthlyStats" class="stats-container"></div>
+    </div>
     <div class="scroll-table-container" id="entriesTable"></div>
 
     <script>
@@ -218,28 +232,53 @@
       document.getElementById('sl').addEventListener('input', updateRiskMetrics);
       document.getElementById('tp').addEventListener('input', updateRiskMetrics);
 
-      // 1. Auto-calculate and display SL Size and Risk:Reward
+      // 1. Fixed SL size calculation and improved RR display
       function updateRiskMetrics() {
         const entry = parseFloat(document.getElementById('entry').value);
         const sl = parseFloat(document.getElementById('sl').value);
         const tp = parseFloat(document.getElementById('tp').value);
         const riskMetrics = document.getElementById('riskMetrics');
+        const pair = document.getElementById('pair').value;
         
         if (!isNaN(entry) && !isNaN(sl) && !isNaN(tp)) {
-          // Calculate SL Size in pips (assuming 4 decimals for FX, 2 for others)
-          const pair = document.getElementById('pair').value;
-          const isFX = ['EURUSD', 'EURCAD', 'GBPUSD'].includes(pair);
-          const pipFactor = isFX ? 10000 : 100;
+          // Calculate SL Size in pips/points
+          let pipFactor = 100;
+          let unit = "points";
+          
+          if (['EURUSD', 'EURCAD', 'GBPUSD'].includes(pair)) {
+            pipFactor = 10000;
+            unit = "pips";
+          }
+          else if (['BTCUSD'].includes(pair)) {
+            pipFactor = 100;
+            unit = "points";
+          }
+          else if (['US30'].includes(pair)) {
+            pipFactor = 1;
+            unit = "points";
+          }
+          
           const slSize = Math.abs(entry - sl) * pipFactor;
           
-          // Calculate Risk:Reward ratio
+          // Calculate and format Risk:Reward as ratio
           const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
+          const formattedRR = formatRR(rr);
           
+          document.getElementById('slLabel').textContent = `SL Size (${unit})`;
           document.getElementById('slSizeDisplay').textContent = slSize.toFixed(2);
-          document.getElementById('rrDisplay').textContent = rr.toFixed(2);
+          document.getElementById('rrDisplay').textContent = formattedRR;
           riskMetrics.style.display = 'grid';
         } else {
           riskMetrics.style.display = 'none';
+        }
+      }
+      
+      // Format RR as ratio (1:5 instead of 5.0)
+      function formatRR(rr) {
+        if (rr >= 1) {
+          return `1:${rr.toFixed(2)}`;
+        } else {
+          return `${(1/rr).toFixed(2)}:1`;
         }
       }
 
@@ -256,25 +295,14 @@
         const result = document.getElementById("result").value;
         const notes = document.getElementById("notes").value;
 
-        // 4d. Data validation for trade direction
         if (zone === "Demand") {
-          if (entry <= sl) {
-            return alert("For Demand zones: Entry should be above SL");
-          }
-          if (tp <= entry) {
-            return alert("For Demand zones: TP should be above Entry");
-          }
+          if (entry <= sl) return alert("For Demand zones: Entry should be above SL");
+          if (tp <= entry) return alert("For Demand zones: TP should be above Entry");
         }
-        
         if (zone === "Supply") {
-          if (entry >= sl) {
-            return alert("For Supply zones: Entry should be below SL");
-          }
-          if (tp >= entry) {
-            return alert("For Supply zones: TP should be below Entry");
-          }
+          if (entry >= sl) return alert("For Supply zones: Entry should be below SL");
+          if (tp >= entry) return alert("For Supply zones: TP should be below Entry");
         }
-        
         if (!entry || !sl || !tp || !date) return alert("Please fill all required fields");
 
         const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
@@ -284,7 +312,6 @@
         localStorage.setItem("trades", JSON.stringify(trades));
         alert("Trade saved successfully");
         
-        // Reset risk metrics display
         document.getElementById('riskMetrics').style.display = 'none';
         renderStats();
         renderTable();
@@ -316,7 +343,6 @@
             const values = lines[i].split(",");
             const obj = {};
             keys.forEach((key, j) => { 
-              // Handle quotes in CSV values
               const val = values[j].replace(/^"|"$/g, '');
               obj[key] = isNaN(val) ? val : parseFloat(val); 
             });
@@ -324,7 +350,6 @@
           }
           localStorage.setItem("trades", JSON.stringify(trades));
           
-          // 2. Show success message
           const successMsg = document.getElementById('importSuccess');
           successMsg.style.display = 'block';
           successMsg.textContent = `Successfully imported ${lines.length - 1} trades!`;
@@ -336,7 +361,6 @@
         reader.readAsText(file);
       }
 
-      // 3. Apply trade filters
       function applyFilters() {
         currentFilters = {
           pair: document.getElementById('filterPair').value,
@@ -365,19 +389,16 @@
         const container = document.getElementById("entriesTable");
         if (!trades.length) return container.innerHTML = "<p>No trades to display</p>";
         
-        // Apply filters
         let filteredTrades = trades.filter(trade => {
           if (currentFilters.pair !== 'all' && trade.pair !== currentFilters.pair) 
             return false;
           if (currentFilters.result !== 'all' && trade.result !== currentFilters.result) 
             return false;
-          
           const tradeDate = new Date(trade.date);
           if (currentFilters.fromDate && new Date(currentFilters.fromDate) > tradeDate) 
             return false;
           if (currentFilters.toDate && new Date(currentFilters.toDate) < tradeDate) 
             return false;
-            
           return true;
         });
         
@@ -388,7 +409,11 @@
         keys.forEach(k => html += `<th>${k}</th>`);
         html += "</tr></thead><tbody>";
         filteredTrades.forEach(t => {
-          html += "<tr>" + keys.map(k => `<td>${t[k]}</td>`).join("") + "</tr>";
+          // Format RR as ratio in table
+          const formattedTrade = {...t};
+          formattedTrade.rr = formatRR(t.rr);
+          
+          html += "<tr>" + keys.map(k => `<td>${formattedTrade[k]}</td>`).join("") + "</tr>";
         });
         html += "</tbody></table>";
         container.innerHTML = html;
@@ -415,17 +440,10 @@
           const wins = data.filter(t => t.result === "Win").length;
           const losses = setupCount - wins;
           const rrSum = data.reduce((acc, t) => acc + t.rr, 0);
-          const winRate = Math.round((wins / setupCount) * 100);
+          const avgRR = rrSum / setupCount;
           
-          // 4a. Extensive risk:reward analysis
-          const rrGroups = {
-            '<1.0': 0,
-            '1.0-1.5': 0,
-            '1.5-2.0': 0,
-            '2.0-3.0': 0,
-            '>3.0': 0
-          };
-          
+          // RR distribution
+          const rrGroups = {'<1.0': 0, '1.0-1.5': 0, '1.5-2.0': 0, '2.0-3.0': 0, '>3.0': 0};
           const winRatesByRR = {
             '<1.0': { wins: 0, total: 0 },
             '1.0-1.5': { wins: 0, total: 0 },
@@ -435,37 +453,20 @@
           };
           
           data.forEach(trade => {
-            // RR distribution
-            if (trade.rr < 1) {
-              rrGroups['<1.0']++;
-              updateWinRateStats(winRatesByRR, '<1.0', trade);
-            } 
-            else if (trade.rr < 1.5) {
-              rrGroups['1.0-1.5']++;
-              updateWinRateStats(winRatesByRR, '1.0-1.5', trade);
-            }
-            else if (trade.rr < 2.0) {
-              rrGroups['1.5-2.0']++;
-              updateWinRateStats(winRatesByRR, '1.5-2.0', trade);
-            }
-            else if (trade.rr < 3.0) {
-              rrGroups['2.0-3.0']++;
-              updateWinRateStats(winRatesByRR, '2.0-3.0', trade);
-            }
-            else {
-              rrGroups['>3.0']++;
-              updateWinRateStats(winRatesByRR, '>3.0', trade);
-            }
+            if (trade.rr < 1) updateRRGroup(rrGroups, winRatesByRR, '<1.0', trade);
+            else if (trade.rr < 1.5) updateRRGroup(rrGroups, winRatesByRR, '1.0-1.5', trade);
+            else if (trade.rr < 2.0) updateRRGroup(rrGroups, winRatesByRR, '1.5-2.0', trade);
+            else if (trade.rr < 3.0) updateRRGroup(rrGroups, winRatesByRR, '2.0-3.0', trade);
+            else updateRRGroup(rrGroups, winRatesByRR, '>3.0', trade);
           });
           
-          // 4b. Performance metrics - Profit Factor
+          // Performance metrics
           const grossProfit = data.filter(t => t.result === "Win").reduce((sum, t) => sum + t.rr, 0);
           const grossLoss = data.filter(t => t.result === "Loss").length;
           const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : '∞';
-          
-          // 4b. Performance metrics - Expectancy
           const avgWin = wins > 0 ? (grossProfit / wins) : 0;
           const avgLoss = losses > 0 ? (grossLoss / losses) : 0;
+          const winRate = Math.round((wins / setupCount) * 100);
           const expectancy = ((winRate/100) * avgWin) - ((1 - winRate/100) * avgLoss);
 
           const days = {};
@@ -486,17 +487,24 @@
             }
           }
 
-          const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
+          const pieCanvasId = `pie_${key.replace(/\s+/g, '_')}`;
+          const barCanvasId = `bar_${key.replace(/\s+/g, '_')}`;
           statsContainer.innerHTML += `
             <div class="stats-card">
               <h3>${pair} - ${month}</h3>
-              <p><strong>Setups:</strong> ${setupCount}</p>
-              <p><strong>Wins:</strong> ${wins}</p>
-              <p><strong>Win Rate:</strong> ${winRate}%</p>
-              <p><strong>Avg R:R:</strong> ${(rrSum / setupCount).toFixed(2)}</p>
-              <p><strong>Profit Factor:</strong> ${profitFactor}</p>
-              <p><strong>Expectancy:</strong> ${expectancy.toFixed(2)} R</p>
-              <p><strong>Best Day:</strong> ${bestDay}</p>
+              <div class="stats-grid">
+                <div>
+                  <p><strong>Setups:</strong> ${setupCount}</p>
+                  <p><strong>Wins:</strong> ${wins}</p>
+                  <p><strong>Win Rate:</strong> ${winRate}%</p>
+                  <p><strong>Avg R:R:</strong> ${formatRR(avgRR)}</p>
+                </div>
+                <div>
+                  <p><strong>Profit Factor:</strong> ${profitFactor}</p>
+                  <p><strong>Expectancy:</strong> ${expectancy.toFixed(2)} R</p>
+                  <p><strong>Best Day:</strong> ${bestDay}</p>
+                </div>
+              </div>
             </div>
             
             <div class="stats-card">
@@ -518,17 +526,50 @@
             </div>
             
             <div class="stats-card">
-              <h3>Performance</h3>
+              <h3>Wins vs Losses</h3>
               <div class="chart-container">
-                <canvas id="${canvasId}"></canvas>
+                <canvas id="${pieCanvasId}"></canvas>
+              </div>
+            </div>
+            
+            <div class="stats-card">
+              <h3>Daily Performance</h3>
+              <div class="chart-container">
+                <canvas id="${barCanvasId}"></canvas>
               </div>
             </div>
           `;
 
           setTimeout(() => {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            // 4c. Charting improvements - Combined chart
-            new Chart(ctx, {
+            // Wins vs Losses Pie Chart
+            const pieCtx = document.getElementById(pieCanvasId).getContext('2d');
+            new Chart(pieCtx, {
+              type: 'pie',
+              data: {
+                labels: ['Wins', 'Losses'],
+                datasets: [{
+                  data: [wins, losses],
+                  backgroundColor: ['#27ae60', '#e74c3c'],
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: { 
+                  legend: { position: 'bottom' },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return `${context.label}: ${context.raw} (${Math.round(context.parsed)}%)`;
+                      }
+                    }
+                  }
+                }
+              }
+            });
+            
+            // Daily Performance Chart
+            const barCtx = document.getElementById(barCanvasId).getContext('2d');
+            new Chart(barCtx, {
               type: 'bar',
               data: {
                 labels: Object.keys(days),
@@ -554,22 +595,14 @@
                 scales: {
                   y: {
                     beginAtZero: true,
-                    title: {
-                      display: true,
-                      text: 'Number of Trades'
-                    }
+                    title: { display: true, text: 'Number of Trades' }
                   },
                   y1: {
                     position: 'right',
                     beginAtZero: true,
                     max: 100,
-                    title: {
-                      display: true,
-                      text: 'Win Rate %'
-                    },
-                    grid: {
-                      drawOnChartArea: false
-                    }
+                    title: { display: true, text: 'Win Rate %' },
+                    grid: { drawOnChartArea: false }
                   }
                 }
               }
@@ -578,11 +611,10 @@
         }
       }
       
-      function updateWinRateStats(groupObj, groupKey, trade) {
-        groupObj[groupKey].total++;
-        if (trade.result === "Win") {
-          groupObj[groupKey].wins++;
-        }
+      function updateRRGroup(rrGroups, winRatesByRR, groupKey, trade) {
+        rrGroups[groupKey]++;
+        winRatesByRR[groupKey].total++;
+        if (trade.result === "Win") winRatesByRR[groupKey].wins++;
       }
       
       function calculateWinRate(group) {
