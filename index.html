@@ -1,263 +1,268 @@
-<!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trade Logger</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    .stats-card {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .chart-container {
-      width: 100%;
-      max-width: 300px;
-      margin-top: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #f0f0f0;
-    }
-  </style>
-</head>
-<body>
-  <h1>Trade Logger</h1>  <form onsubmit="event.preventDefault(); saveTrade();">
-    <input id="pair" placeholder="Pair">
-    <input id="h4" placeholder="H4 Setup">
-    <input id="h1" placeholder="H1 Setup">
-    <input id="zone" placeholder="Zone">
-    <input id="entry" type="number" step="any" placeholder="Entry">
-    <input id="sl" type="number" step="any" placeholder="SL">
-    <input id="tp" type="number" step="any" placeholder="TP">
-    <input id="date" type="date">
-    <label for="slSize">SL Size (Auto)</label>
-    <input type="text" id="slSize" readonly />
-    <label for="rr">Risk to Reward (Auto)</label>
-    <input type="text" id="rr" readonly />
-    <select id="result">
-      <option>Win</option>
-      <option>Loss</option>
-    </select>
-    <input id="notes" placeholder="Notes">
-    <button type="submit">Save Trade</button>
-  </form><button onclick="exportToCSV()">Export to CSV</button>
-
-  <table id="tradesTable"></table>
-  <div id="monthlyStats"></div>  <script>
-    let trades = JSON.parse(localStorage.getItem("trades")) || [];
-
-    function saveTrade() {
-      const pair = document.getElementById("pair").value;
-      const h4 = document.getElementById("h4").value;
-      const h1 = document.getElementById("h1").value;
-      const zone = document.getElementById("zone").value;
-      const entry = parseFloat(document.getElementById("entry").value);
-      const sl = parseFloat(document.getElementById("sl").value);
-      const tp = parseFloat(document.getElementById("tp").value);
-      const date = document.getElementById("date").value;
-      const result = document.getElementById("result").value;
-      const notes = document.getElementById("notes").value;
-
-      if (!entry || !sl || !tp || !date) return alert("Please fill all fields");
-
-      const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
-      const slSize = Math.abs(sl - entry);
-
-      trades.push({ pair, h4, h1, zone, entry, sl, tp, rr, slSize, date, result, notes });
-      localStorage.setItem("trades", JSON.stringify(trades));
-      alert("Trade saved");
-      renderTrades();
-      renderStats();
-    }
-
-    function renderTrades(filteredTrades = trades) {
-      const table = document.getElementById("tradesTable");
-      if (!table) return;
-
-      table.innerHTML = `
-        <tr>
-          <th>Pair</th>
-          <th>Date</th>
-          <th>Entry</th>
-          <th>SL</th>
-          <th>TP</th>
-          <th>SL Size</th>
-          <th>R:R</th>
-          <th>Result</th>
-          <th>Notes</th>
-        </tr>
-        ${filteredTrades.map(t => `
-          <tr>
-            <td>${t.pair}</td>
-            <td>${t.date}</td>
-            <td>${t.entry}</td>
-            <td>${t.sl}</td>
-            <td>${t.tp}</td>
-            <td>${t.slSize?.toFixed(2) ?? "-"}</td>
-            <td>${t.rr ? `1:${t.rr.toFixed(2)}` : "-"}</td>
-            <td>${t.result}</td>
-            <td>${t.notes}</td>
-          </tr>
-        `).join("")}
-      `;
-    }
-
-    function exportToCSV() {
-      if (trades.length === 0) return alert("No trades to export");
-      const headers = Object.keys(trades[0]).join(",");
-      const rows = trades.map(t => Object.values(t).join(","));
-      const csvContent = [headers, ...rows].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "trades.csv";
-      link.click();
-      alert("CSV downloaded successfully");
-    }
-
-    function renderStats() {
-      const statsContainer = document.getElementById("monthlyStats");
-      statsContainer.innerHTML = "";
-
-      const filterHtml = `
-        <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
-          <select id="filterPair" style="flex: 1">
-            <option value="">All Pairs</option>
-            ${[...new Set(trades.map(t => t.pair))].map(p => `<option value="${p}">${p}</option>`).join("")}
-          </select>
-          <input type="date" id="filterStart" style="flex: 1">
-          <input type="date" id="filterEnd" style="flex: 1">
-          <button onclick="applyFilters()" style="flex: 1; background: #2980b9; color: white;">Apply Filters</button>
+<!DOCTYPE html>
+<html lang="en">
+  <head>  
+    <meta charset="UTF-8" />  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
+    <title>Backtest Dashboard</title>  
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
+    <style>  
+      body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }  
+      h1 { text-align: center; color: #333; }  
+      .form-container, .dashboard, .stats-section { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }  
+      label { display: block; margin: 10px 0 4px; }  
+      input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }  
+      button { background: #007bff; color: white; border: none; cursor: pointer; }  
+      button:hover { background: #0056b3; }  
+      .stats-card { padding: 15px; background: #eee; margin: 10px; border-radius: 10px; width: 48%; display: inline-block; vertical-align: top; }  
+      .stats-card h3 { margin: 0 0 10px; }  
+      .chart-container { width: 100%; height: 300px; }  
+      .export-section { margin-top: 20px; padding: 20px; border-top: 2px solid #ddd; }  
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .form-grid label, .form-grid input, .form-grid select { width: 100%; }
+      .scroll-table-container { overflow-x: auto; overflow-y: auto; max-height: 300px; border: 1px solid #ccc; border-radius: 10px; margin-top: 20px; }
+      table { width: 100%; border-collapse: collapse; min-width: 800px; }
+      th, td { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }
+    </style>  
+  </head>  
+  <body>  
+    <h1>Backtest Dashboard</h1>  
+    <div class="form-container">  
+      <div class="form-grid">
+        <div>
+          <label>Pair</label>  
+          <select id="pair">  
+            <option value="EURUSD">EURUSD</option>  
+            <option value="EURCAD">EURCAD</option>  
+            <option value="GBPUSD">GBPUSD</option>  
+            <option value="US30">US30</option>  
+            <option value="BTCUSD">BTCUSD</option>  
+          </select>  
         </div>
-      `;
-      statsContainer.innerHTML += filterHtml;
+        <div>
+          <label>Date</label>  
+          <input type="date" id="date">  
+        </div>
+        <div>
+          <label>H4 Direction</label>  
+          <select id="h4">  
+            <option value="Bullish">Bullish</option>  
+            <option value="Bearish">Bearish</option>  
+          </select>  
+        </div>
+        <div>
+          <label>H1 Direction</label>  
+          <select id="h1">  
+            <option value="Bullish">Bullish</option>  
+            <option value="Bearish">Bearish</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Zone Type</label>  
+          <select id="zone">  
+            <option value="Supply">Supply</option>  
+            <option value="Demand">Demand</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Zone Timeframe</label>  
+          <select id="zoneTimeframe">  
+            <option value="M15">M15</option>  
+            <option value="H1">H1</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Entry Price</label>  
+          <input type="number" id="entry" step="0.0001">  
+        </div>
+        <div>
+          <label>Stop Loss</label>  
+          <input type="number" id="sl" step="0.0001">  
+        </div>
+        <div>
+          <label>Take Profit</label>  
+          <input type="number" id="tp" step="0.0001">  
+        </div>
+        <div>
+          <label>Trade Result</label>  
+          <select id="result">  
+            <option value="Win">Win</option>  
+            <option value="Loss">Loss</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Notes</label>  
+          <input type="text" id="notes">  
+        </div>
+      </div>
+      <button onclick="saveTrade()">Save Trade</button>
+    </div>
 
-      renderFilteredStats(trades);
-    }
+    <div class="export-section">
+      <input type="file" id="csvFile" accept=".csv">
+      <button onclick="importFromCSV()">Import CSV</button>
+      <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
+    </div>
 
-    function applyFilters() {
-      const pair = document.getElementById("filterPair").value;
-      const start = document.getElementById("filterStart").value;
-      const end = document.getElementById("filterEnd").value;
+    <div class="stats-section" id="monthlyStats"></div>
+    <div class="scroll-table-container" id="entriesTable"></div>
 
-      const filtered = trades.filter(t => {
-        if (pair && t.pair !== pair) return false;
-        if (start && new Date(t.date) < new Date(start)) return false;
-        if (end && new Date(t.date) > new Date(end)) return false;
-        return true;
-      });
+    <script>
+      let trades = JSON.parse(localStorage.getItem("trades")) || [];
 
-      renderFilteredStats(filtered);
-      renderTrades(filtered);
-    }
+      function saveTrade() {
+        const pair = document.getElementById("pair").value;
+        const h4 = document.getElementById("h4").value;
+        const h1 = document.getElementById("h1").value;
+        const zone = document.getElementById("zone").value;
+        const zoneTimeframe = document.getElementById("zoneTimeframe").value;
+        const entry = parseFloat(document.getElementById("entry").value);
+        const sl = parseFloat(document.getElementById("sl").value);
+        const tp = parseFloat(document.getElementById("tp").value);
+        const date = document.getElementById("date").value;
+        const result = document.getElementById("result").value;
+        const notes = document.getElementById("notes").value;
 
-    function renderFilteredStats(filteredTrades) {
-      const statsContainer = document.getElementById("monthlyStats");
-      const allCards = document.querySelectorAll(".stats-card");
-      allCards.forEach(card => card.remove());
+        if (!entry || !sl || !tp || !date) return alert("Please fill all fields");
 
-      const statsMap = {};
-      filteredTrades.forEach(trade => {
-        const date = new Date(trade.date);
-        const monthLabel = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
-        const key = `${trade.pair}_${monthLabel}`;
-        if (!statsMap[key]) statsMap[key] = [];
-        statsMap[key].push(trade);
-      });
+        const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
+        const slSize = Math.abs(sl - entry);
 
-      for (let key in statsMap) {
-        const [pair, ...monthArr] = key.split("_");
-        const month = monthArr.join(" ");
-        const data = statsMap[key];
-        const setupCount = data.length;
-        const wins = data.filter(t => t.result === "Win").length;
-        const losses = setupCount - wins;
-        const rrSum = data.reduce((acc, t) => acc + t.rr, 0);
-        const winRate = Math.round((wins / setupCount) * 100);
+        trades.push({ pair, h4, h1, zone, zoneTimeframe, entry, sl, tp, rr, slSize, date, result, notes });
+        localStorage.setItem("trades", JSON.stringify(trades));
+        alert("Trade saved successfully");
+        renderStats();
+        renderTable();
+      }
 
-        const days = {};
-        data.forEach(t => {
-          const weekday = new Date(t.date).toLocaleString('en-US', { weekday: 'long' });
-          if (!days[weekday]) days[weekday] = { total: 0, wins: 0 };
-          days[weekday].total++;
-          if (t.result === "Win") days[weekday].wins++;
+      function exportToCSV() {
+        if (!trades.length) return alert("No trades to export");
+        const headers = Object.keys(trades[0]).join(",");
+        const rows = trades.map(t => Object.values(t).join(","));
+        const csvContent = [headers, ...rows].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "trades.csv";
+        link.click();
+      }
+
+      function importFromCSV() {
+        const fileInput = document.getElementById("csvFile");
+        const file = fileInput.files[0];
+        if (!file) return alert("Please select a CSV file.");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const content = e.target.result;
+          const lines = content.trim().split("\n");
+          const keys = lines[0].split(",");
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(",");
+            const obj = {};
+            keys.forEach((key, j) => { obj[key] = isNaN(values[j]) ? values[j] : parseFloat(values[j]); });
+            trades.push(obj);
+          }
+          localStorage.setItem("trades", JSON.stringify(trades));
+          renderStats();
+          renderTable();
+        };
+        reader.readAsText(file);
+      }
+
+      function renderTable() {
+        const container = document.getElementById("entriesTable");
+        if (!trades.length) return container.innerHTML = "<p>No trades to display</p>";
+        let html = "<table><thead><tr>";
+        const keys = Object.keys(trades[0]);
+        keys.forEach(k => html += `<th>${k}</th>`);
+        html += "</tr></thead><tbody>";
+        trades.forEach(t => {
+          html += "<tr>" + keys.map(k => `<td>${t[k]}</td>`).join("") + "</tr>";
+        });
+        html += "</tbody></table>";
+        container.innerHTML = html;
+      }
+
+      function renderStats() {
+        const statsContainer = document.getElementById("monthlyStats");
+        statsContainer.innerHTML = "";
+        const statsMap = {};
+
+        trades.forEach(trade => {
+          const date = new Date(trade.date);
+          const monthLabel = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
+          const key = `${trade.pair}_${monthLabel}`;
+          if (!statsMap[key]) statsMap[key] = [];
+          statsMap[key].push(trade);
         });
 
-        let bestDay = "";
-        let maxWinRate = 0;
-        for (let d in days) {
-          const rate = days[d].wins / days[d].total;
-          if (rate > maxWinRate) {
-            maxWinRate = rate;
-            bestDay = d;
-          }
-        }
+        for (let key in statsMap) {
+          const [pair, ...monthArr] = key.split("_");
+          const month = monthArr.join(" ");
+          const data = statsMap[key];
+          const setupCount = data.length;
+          const wins = data.filter(t => t.result === "Win").length;
+          const losses = setupCount - wins;
+          const rrSum = data.reduce((acc, t) => acc + t.rr, 0);
+          const winRate = Math.round((wins / setupCount) * 100);
 
-        const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
-
-        statsContainer.innerHTML += `
-          <div class="stats-card">
-            <h3>${pair} - ${month}</h3>
-            <p><strong>Setups:</strong> ${setupCount}</p>
-            <p><strong>Wins:</strong> ${wins}</p>
-            <p><strong>Win Rate:</strong> ${winRate}%</p>
-            <p><strong>Average R:R:</strong> 1:${(rrSum / setupCount).toFixed(2)}</p>
-            <p><strong>Best Trading Day:</strong> ${bestDay}</p>
-            <ul>
-              ${data.map(t => `
-                <li>
-                  <strong>Date:</strong> ${t.date} | 
-                  <strong>Result:</strong> ${t.result} | 
-                  <strong>RR:</strong> 1:${t.rr.toFixed(2)} | 
-                  <strong>SL Size:</strong> ${t.slSize.toFixed(2)} | 
-                  <strong>Note:</strong> ${t.notes}
-                </li>
-              `).join("")}
-            </ul>
-            <div class="chart-container">
-              <canvas id="${canvasId}"></canvas>
-            </div>
-          </div>
-        `;
-
-        setTimeout(() => {
-          const ctx = document.getElementById(canvasId).getContext('2d');
-          new Chart(ctx, {
-            type: 'pie',
-            data: {
-              labels: ['Wins', 'Losses'],
-              datasets: [{
-                data: [wins, losses],
-                backgroundColor: ['#27ae60', '#e74c3c'],
-              }]
-            },
-            options: {
-              responsive: true,
-              plugins: { legend: { position: 'bottom' } }
-            }
+          const days = {};
+          data.forEach(t => {
+            const weekday = new Date(t.date).toLocaleString('en-US', { weekday: 'long' });
+            if (!days[weekday]) days[weekday] = { total: 0, wins: 0 };
+            days[weekday].total++;
+            if (t.result === "Win") days[weekday].wins++;
           });
-        }, 100);
-      }
-    }
 
-    window.onload = () => {
-      renderTrades();
-      renderStats();
-    };
-  </script></body>
+          let bestDay = "";
+          let maxWinRate = 0;
+          for (let d in days) {
+            const rate = days[d].wins / days[d].total;
+            if (rate > maxWinRate) {
+              maxWinRate = rate;
+              bestDay = d;
+            }
+          }
+
+          const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
+          statsContainer.innerHTML += `
+            <div class="stats-card">
+              <h3>${pair} - ${month}</h3>
+              <p><strong>Setups:</strong> ${setupCount}</p>
+              <p><strong>Wins:</strong> ${wins}</p>
+              <p><strong>Win Rate:</strong> ${winRate}%</p>
+              <p><strong>Average R:R:</strong> ${(rrSum / setupCount).toFixed(2)}</p>
+              <p><strong>Best Trading Day:</strong> ${bestDay}</p>
+              <div class="chart-container">
+                <canvas id="${canvasId}"></canvas>
+              </div>
+            </div>
+          `;
+
+          setTimeout(() => {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+              type: 'pie',
+              data: {
+                labels: ['Wins', 'Losses'],
+                datasets: [{
+                  data: [wins, losses],
+                  backgroundColor: ['#27ae60', '#e74c3c'],
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } }
+              }
+            });
+          }, 100);
+        }
+      }
+
+      window.onload = function() {
+        renderStats();
+        renderTable();
+      }
+    </script>
+  </body>
 </html>
