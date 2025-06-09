@@ -232,7 +232,7 @@
       document.getElementById('sl').addEventListener('input', updateRiskMetrics);
       document.getElementById('tp').addEventListener('input', updateRiskMetrics);
 
-      // 1. Fixed SL size calculation and improved RR display
+      // Fixed SL size calculation and improved RR display
       function updateRiskMetrics() {
         const entry = parseFloat(document.getElementById('entry').value);
         const sl = parseFloat(document.getElementById('sl').value);
@@ -385,10 +385,15 @@
         renderTable();
       }
 
+      // Fixed table rendering function
       function renderTable() {
         const container = document.getElementById("entriesTable");
-        if (!trades.length) return container.innerHTML = "<p>No trades to display</p>";
+        if (!trades.length) {
+          container.innerHTML = "<p>No trades to display</p>";
+          return;
+        }
         
+        // Apply filters
         let filteredTrades = trades.filter(trade => {
           if (currentFilters.pair !== 'all' && trade.pair !== currentFilters.pair) 
             return false;
@@ -402,19 +407,29 @@
           return true;
         });
         
-        if (!filteredTrades.length) return container.innerHTML = "<p>No trades match the current filters</p>";
+        if (!filteredTrades.length) {
+          container.innerHTML = "<p>No trades match the current filters</p>";
+          return;
+        }
         
         let html = "<table><thead><tr>";
         const keys = Object.keys(filteredTrades[0]);
         keys.forEach(k => html += `<th>${k}</th>`);
         html += "</tr></thead><tbody>";
+        
         filteredTrades.forEach(t => {
-          // Format RR as ratio in table
-          const formattedTrade = {...t};
-          formattedTrade.rr = formatRR(t.rr);
-          
-          html += "<tr>" + keys.map(k => `<td>${formattedTrade[k]}</td>`).join("") + "</tr>";
+          html += "<tr>";
+          keys.forEach(k => {
+            // Format RR as ratio only for display
+            if (k === 'rr') {
+              html += `<td>${formatRR(t[k])}</td>`;
+            } else {
+              html += `<td>${t[k]}</td>`;
+            }
+          });
+          html += "</tr>";
         });
+        
         html += "</tbody></table>";
         container.innerHTML = html;
       }
