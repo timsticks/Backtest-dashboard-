@@ -5,8 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
     <title>Backtest Dashboard</title>  
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
-    <style>
-      /* Added styles for risk metrics and filters */
+    <style>  
+      body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }  
+      h1 { text-align: center; color: #333; }  
+      .form-container, .dashboard, .stats-section { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }  
+      label { display: block; margin: 10px 0 4px; }  
+      input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }  
+      button { background: #007bff; color: white; border: none; cursor: pointer; }  
+      button:hover { background: #0056b3; }  
+      .stats-card { padding: 15px; background: #eee; margin: 10px; border-radius: 10px; width: 48%; display: inline-block; vertical-align: top; }  
+      .stats-card h3 { margin: 0 0 10px; }  
+      .chart-container { width: 100%; height: 300px; }  
+      .export-section { margin-top: 20px; padding: 20px; border-top: 2px solid #ddd; }  
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .form-grid label, .form-grid input, .form-grid select { width: 100%; }
+      .scroll-table-container { overflow-x: auto; overflow-y: auto; max-height: 300px; border: 1px solid #ccc; border-radius: 10px; margin-top: 20px; }
+      table { width: 100%; border-collapse: collapse; min-width: 800px; }
+      th, td { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }
+      
+      /* New styles for enhancements */
       .risk-metrics { 
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -27,7 +44,7 @@
       }
       .filters {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr auto;
+        grid-template-columns: 1fr 1fr 1fr auto;
         gap: 10px;
         margin: 20px 0;
         align-items: end;
@@ -47,16 +64,85 @@
         margin-top: 10px;
         display: none;
       }
+      .filter-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
     </style>  
   </head>  
   <body>  
     <h1>Backtest Dashboard</h1>  
     <div class="form-container">  
       <div class="form-grid">
-        <!-- ... existing form fields ... -->
+        <div>
+          <label>Pair</label>  
+          <select id="pair">  
+            <option value="EURUSD">EURUSD</option>  
+            <option value="EURCAD">EURCAD</option>  
+            <option value="GBPUSD">GBPUSD</option>  
+            <option value="US30">US30</option>  
+            <option value="BTCUSD">BTCUSD</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Date</label>  
+          <input type="date" id="date">  
+        </div>
+        <div>
+          <label>H4 Direction</label>  
+          <select id="h4">  
+            <option value="Bullish">Bullish</option>  
+            <option value="Bearish">Bearish</option>  
+          </select>  
+        </div>
+        <div>
+          <label>H1 Direction</label>  
+          <select id="h1">  
+            <option value="Bullish">Bullish</option>  
+            <option value="Bearish">Bearish</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Zone Type</label>  
+          <select id="zone">  
+            <option value="Supply">Supply</option>  
+            <option value="Demand">Demand</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Zone Timeframe</label>  
+          <select id="zoneTimeframe">  
+            <option value="M15">M15</option>  
+            <option value="H1">H1</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Entry Price</label>  
+          <input type="number" id="entry" step="0.0001">  
+        </div>
+        <div>
+          <label>Stop Loss</label>  
+          <input type="number" id="sl" step="0.0001">  
+        </div>
+        <div>
+          <label>Take Profit</label>  
+          <input type="number" id="tp" step="0.0001">  
+        </div>
+        <div>
+          <label>Trade Result</label>  
+          <select id="result">  
+            <option value="Win">Win</option>  
+            <option value="Loss">Loss</option>  
+          </select>  
+        </div>
+        <div>
+          <label>Notes</label>  
+          <input type="text" id="notes">  
+        </div>
       </div>
       
-      <!-- Added Risk Metrics Display -->
+      <!-- 1. SL Size and Risk:Reward Display -->
       <div class="risk-metrics" id="riskMetrics" style="display: none;">
         <div>
           <div>SL Size (pips)</div>
@@ -75,11 +161,12 @@
       <input type="file" id="csvFile" accept=".csv">
       <button onclick="importFromCSV()">Import CSV</button>
       <button class="export-btn" onclick="exportToCSV()">Download CSV</button>
-      <!-- Added Success Message -->
+      
+      <!-- 2. Success Message for CSV Imports -->
       <div class="success-message" id="importSuccess">CSV imported successfully!</div>
     </div>
 
-    <!-- Added Filters -->
+    <!-- 3. Trade Filtering -->
     <div class="filters">
       <div>
         <label>Pair</label>
@@ -108,7 +195,7 @@
           <option value="Loss">Loss</option>
         </select>
       </div>
-      <div>
+      <div class="filter-actions">
         <button onclick="applyFilters()">Apply Filters</button>
         <button onclick="resetFilters()">Reset</button>
       </div>
@@ -157,23 +244,43 @@
       }
 
       function saveTrade() {
-        // Existing save logic plus validation
+        const pair = document.getElementById("pair").value;
+        const h4 = document.getElementById("h4").value;
+        const h1 = document.getElementById("h1").value;
+        const zone = document.getElementById("zone").value;
+        const zoneTimeframe = document.getElementById("zoneTimeframe").value;
         const entry = parseFloat(document.getElementById("entry").value);
         const sl = parseFloat(document.getElementById("sl").value);
         const tp = parseFloat(document.getElementById("tp").value);
-        const zone = document.getElementById("zone").value;
-        
-        // 4a. Enhanced validation
-        if (zone === "Demand" && (entry <= sl || tp <= entry)) {
-          return alert("For Demand zones: Entry > SL and TP > Entry");
+        const date = document.getElementById("date").value;
+        const result = document.getElementById("result").value;
+        const notes = document.getElementById("notes").value;
+
+        // 4d. Data validation for trade direction
+        if (zone === "Demand") {
+          if (entry <= sl) {
+            return alert("For Demand zones: Entry should be above SL");
+          }
+          if (tp <= entry) {
+            return alert("For Demand zones: TP should be above Entry");
+          }
         }
         
-        if (zone === "Supply" && (entry >= sl || tp >= entry)) {
-          return alert("For Supply zones: Entry < SL and TP < Entry");
+        if (zone === "Supply") {
+          if (entry >= sl) {
+            return alert("For Supply zones: Entry should be below SL");
+          }
+          if (tp >= entry) {
+            return alert("For Supply zones: TP should be below Entry");
+          }
         }
         
-        // Existing save logic...
-        trades.push({ /* trade data */ });
+        if (!entry || !sl || !tp || !date) return alert("Please fill all required fields");
+
+        const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
+        const slSize = Math.abs(sl - entry);
+
+        trades.push({ pair, h4, h1, zone, zoneTimeframe, entry, sl, tp, rr, slSize, date, result, notes });
         localStorage.setItem("trades", JSON.stringify(trades));
         alert("Trade saved successfully");
         
@@ -183,20 +290,53 @@
         renderTable();
       }
 
-      // 2. Success message for CSV imports
-      function importFromCSV() {
-        // ... existing import logic ...
-        
-        // After successful import:
-        const successMsg = document.getElementById('importSuccess');
-        successMsg.style.display = 'block';
-        successMsg.textContent = `Successfully imported ${lines.length - 1} trades!`;
-        
-        // Hide after 3 seconds
-        setTimeout(() => successMsg.style.display = 'none', 3000);
+      function exportToCSV() {
+        if (!trades.length) return alert("No trades to export");
+        const headers = Object.keys(trades[0]).join(",");
+        const rows = trades.map(t => Object.values(t).join(","));
+        const csvContent = [headers, ...rows].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "trades.csv";
+        link.click();
       }
 
-      // 3. Trade filtering
+      function importFromCSV() {
+        const fileInput = document.getElementById("csvFile");
+        const file = fileInput.files[0];
+        if (!file) return alert("Please select a CSV file.");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const content = e.target.result;
+          const lines = content.trim().split("\n");
+          const keys = lines[0].split(",");
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(",");
+            const obj = {};
+            keys.forEach((key, j) => { 
+              // Handle quotes in CSV values
+              const val = values[j].replace(/^"|"$/g, '');
+              obj[key] = isNaN(val) ? val : parseFloat(val); 
+            });
+            trades.push(obj);
+          }
+          localStorage.setItem("trades", JSON.stringify(trades));
+          
+          // 2. Show success message
+          const successMsg = document.getElementById('importSuccess');
+          successMsg.style.display = 'block';
+          successMsg.textContent = `Successfully imported ${lines.length - 1} trades!`;
+          setTimeout(() => successMsg.style.display = 'none', 3000);
+          
+          renderStats();
+          renderTable();
+        };
+        reader.readAsText(file);
+      }
+
+      // 3. Apply trade filters
       function applyFilters() {
         currentFilters = {
           pair: document.getElementById('filterPair').value,
@@ -222,6 +362,9 @@
       }
 
       function renderTable() {
+        const container = document.getElementById("entriesTable");
+        if (!trades.length) return container.innerHTML = "<p>No trades to display</p>";
+        
         // Apply filters
         let filteredTrades = trades.filter(trade => {
           if (currentFilters.pair !== 'all' && trade.pair !== currentFilters.pair) 
@@ -238,74 +381,201 @@
           return true;
         });
         
-        // ... existing table rendering code using filteredTrades ...
+        if (!filteredTrades.length) return container.innerHTML = "<p>No trades match the current filters</p>";
+        
+        let html = "<table><thead><tr>";
+        const keys = Object.keys(filteredTrades[0]);
+        keys.forEach(k => html += `<th>${k}</th>`);
+        html += "</tr></thead><tbody>";
+        filteredTrades.forEach(t => {
+          html += "<tr>" + keys.map(k => `<td>${t[k]}</td>`).join("") + "</tr>";
+        });
+        html += "</tbody></table>";
+        container.innerHTML = html;
       }
 
-      // 4b. Enhanced RR analysis in stats
       function renderStats() {
-        // ... existing stats code ...
-        
-        // Add RR distribution analysis
-        const rrGroups = {
-          '<1.0': 0,
-          '1.0-1.5': 0,
-          '1.5-2.0': 0,
-          '2.0-3.0': 0,
-          '>3.0': 0
-        };
-        
-        const winRatesByRR = {
-          '<1.0': { wins: 0, total: 0 },
-          '1.0-1.5': { wins: 0, total: 0 },
-          '1.5-2.0': { wins: 0, total: 0 },
-          '2.0-3.0': { wins: 0, total: 0 },
-          '>3.0': { wins: 0, total: 0 }
-        };
-        
+        const statsContainer = document.getElementById("monthlyStats");
+        statsContainer.innerHTML = "";
+        const statsMap = {};
+
         trades.forEach(trade => {
-          // RR distribution
-          if (trade.rr < 1) {
-            rrGroups['<1.0']++;
-            updateWinRateStats(winRatesByRR, '<1.0', trade);
-          } 
-          else if (trade.rr < 1.5) {
-            rrGroups['1.0-1.5']++;
-            updateWinRateStats(winRatesByRR, '1.0-1.5', trade);
-          }
-          else if (trade.rr < 2.0) {
-            rrGroups['1.5-2.0']++;
-            updateWinRateStats(winRatesByRR, '1.5-2.0', trade);
-          }
-          else if (trade.rr < 3.0) {
-            rrGroups['2.0-3.0']++;
-            updateWinRateStats(winRatesByRR, '2.0-3.0', trade);
-          }
-          else {
-            rrGroups['>3.0']++;
-            updateWinRateStats(winRatesByRR, '>3.0', trade);
-          }
+          const date = new Date(trade.date);
+          const monthLabel = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
+          const key = `${trade.pair}_${monthLabel}`;
+          if (!statsMap[key]) statsMap[key] = [];
+          statsMap[key].push(trade);
         });
-        
-        // Add RR distribution to stats cards
-        statsContainer.innerHTML += `
-          <div class="stats-card">
-            <h3>RR Distribution</h3>
-            <p>&lt;1.0: ${rrGroups['<1.0']} trades</p>
-            <p>1.0-1.5: ${rrGroups['1.0-1.5']} trades</p>
-            <p>1.5-2.0: ${rrGroups['1.5-2.0']} trades</p>
-            <p>2.0-3.0: ${rrGroups['2.0-3.0']} trades</p>
-            <p>&gt;3.0: ${rrGroups['>3.0']} trades</p>
-          </div>
+
+        for (let key in statsMap) {
+          const [pair, ...monthArr] = key.split("_");
+          const month = monthArr.join(" ");
+          const data = statsMap[key];
+          const setupCount = data.length;
+          const wins = data.filter(t => t.result === "Win").length;
+          const losses = setupCount - wins;
+          const rrSum = data.reduce((acc, t) => acc + t.rr, 0);
+          const winRate = Math.round((wins / setupCount) * 100);
           
-          <div class="stats-card">
-            <h3>Win Rate by RR</h3>
-            <p>&lt;1.0: ${calculateWinRate(winRatesByRR['<1.0'])}%</p>
-            <p>1.0-1.5: ${calculateWinRate(winRatesByRR['1.0-1.5'])}%</p>
-            <p>1.5-2.0: ${calculateWinRate(winRatesByRR['1.5-2.0'])}%</p>
-            <p>2.0-3.0: ${calculateWinRate(winRatesByRR['2.0-3.0'])}%</p>
-            <p>&gt;3.0: ${calculateWinRate(winRatesByRR['>3.0'])}%</p>
-          </div>
-        `;
+          // 4a. Extensive risk:reward analysis
+          const rrGroups = {
+            '<1.0': 0,
+            '1.0-1.5': 0,
+            '1.5-2.0': 0,
+            '2.0-3.0': 0,
+            '>3.0': 0
+          };
+          
+          const winRatesByRR = {
+            '<1.0': { wins: 0, total: 0 },
+            '1.0-1.5': { wins: 0, total: 0 },
+            '1.5-2.0': { wins: 0, total: 0 },
+            '2.0-3.0': { wins: 0, total: 0 },
+            '>3.0': { wins: 0, total: 0 }
+          };
+          
+          data.forEach(trade => {
+            // RR distribution
+            if (trade.rr < 1) {
+              rrGroups['<1.0']++;
+              updateWinRateStats(winRatesByRR, '<1.0', trade);
+            } 
+            else if (trade.rr < 1.5) {
+              rrGroups['1.0-1.5']++;
+              updateWinRateStats(winRatesByRR, '1.0-1.5', trade);
+            }
+            else if (trade.rr < 2.0) {
+              rrGroups['1.5-2.0']++;
+              updateWinRateStats(winRatesByRR, '1.5-2.0', trade);
+            }
+            else if (trade.rr < 3.0) {
+              rrGroups['2.0-3.0']++;
+              updateWinRateStats(winRatesByRR, '2.0-3.0', trade);
+            }
+            else {
+              rrGroups['>3.0']++;
+              updateWinRateStats(winRatesByRR, '>3.0', trade);
+            }
+          });
+          
+          // 4b. Performance metrics - Profit Factor
+          const grossProfit = data.filter(t => t.result === "Win").reduce((sum, t) => sum + t.rr, 0);
+          const grossLoss = data.filter(t => t.result === "Loss").length;
+          const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : '∞';
+          
+          // 4b. Performance metrics - Expectancy
+          const avgWin = wins > 0 ? (grossProfit / wins) : 0;
+          const avgLoss = losses > 0 ? (grossLoss / losses) : 0;
+          const expectancy = ((winRate/100) * avgWin) - ((1 - winRate/100) * avgLoss);
+
+          const days = {};
+          data.forEach(t => {
+            const weekday = new Date(t.date).toLocaleString('en-US', { weekday: 'long' });
+            if (!days[weekday]) days[weekday] = { total: 0, wins: 0 };
+            days[weekday].total++;
+            if (t.result === "Win") days[weekday].wins++;
+          });
+
+          let bestDay = "";
+          let maxWinRate = 0;
+          for (let d in days) {
+            const rate = days[d].wins / days[d].total;
+            if (rate > maxWinRate) {
+              maxWinRate = rate;
+              bestDay = d;
+            }
+          }
+
+          const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
+          statsContainer.innerHTML += `
+            <div class="stats-card">
+              <h3>${pair} - ${month}</h3>
+              <p><strong>Setups:</strong> ${setupCount}</p>
+              <p><strong>Wins:</strong> ${wins}</p>
+              <p><strong>Win Rate:</strong> ${winRate}%</p>
+              <p><strong>Avg R:R:</strong> ${(rrSum / setupCount).toFixed(2)}</p>
+              <p><strong>Profit Factor:</strong> ${profitFactor}</p>
+              <p><strong>Expectancy:</strong> ${expectancy.toFixed(2)} R</p>
+              <p><strong>Best Day:</strong> ${bestDay}</p>
+            </div>
+            
+            <div class="stats-card">
+              <h3>RR Distribution</h3>
+              <p>&lt;1.0: ${rrGroups['<1.0']} trades</p>
+              <p>1.0-1.5: ${rrGroups['1.0-1.5']} trades</p>
+              <p>1.5-2.0: ${rrGroups['1.5-2.0']} trades</p>
+              <p>2.0-3.0: ${rrGroups['2.0-3.0']} trades</p>
+              <p>&gt;3.0: ${rrGroups['>3.0']} trades</p>
+            </div>
+            
+            <div class="stats-card">
+              <h3>Win Rate by RR</h3>
+              <p>&lt;1.0: ${calculateWinRate(winRatesByRR['<1.0'])}%</p>
+              <p>1.0-1.5: ${calculateWinRate(winRatesByRR['1.0-1.5'])}%</p>
+              <p>1.5-2.0: ${calculateWinRate(winRatesByRR['1.5-2.0'])}%</p>
+              <p>2.0-3.0: ${calculateWinRate(winRatesByRR['2.0-3.0'])}%</p>
+              <p>&gt;3.0: ${calculateWinRate(winRatesByRR['>3.0'])}%</p>
+            </div>
+            
+            <div class="stats-card">
+              <h3>Performance</h3>
+              <div class="chart-container">
+                <canvas id="${canvasId}"></canvas>
+              </div>
+            </div>
+          `;
+
+          setTimeout(() => {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            // 4c. Charting improvements - Combined chart
+            new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: Object.keys(days),
+                datasets: [
+                  {
+                    label: 'Trades',
+                    data: Object.values(days).map(d => d.total),
+                    backgroundColor: '#3498db',
+                  },
+                  {
+                    label: 'Win Rate %',
+                    data: Object.values(days).map(d => (d.wins / d.total) * 100),
+                    type: 'line',
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    yAxisID: 'y1',
+                    fill: false
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Number of Trades'
+                    }
+                  },
+                  y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                      display: true,
+                      text: 'Win Rate %'
+                    },
+                    grid: {
+                      drawOnChartArea: false
+                    }
+                  }
+                }
+              }
+            });
+          }, 100);
+        }
       }
       
       function updateWinRateStats(groupObj, groupKey, trade) {
@@ -319,46 +589,9 @@
         return group.total > 0 ? ((group.wins / group.total) * 100).toFixed(1) : '0.0';
       }
 
-      // 4c. Enhanced charting
-      function renderStats() {
-        // ... existing code ...
-        
-        // Add RR vs Win Rate scatter plot
-        const scatterCanvasId = `scatter_${key.replace(/\s+/g, '_')}`;
-        statsContainer.innerHTML += `
-          <div class="stats-card">
-            <h3>RR vs Win Rate</h3>
-            <div class="chart-container">
-              <canvas id="${scatterCanvasId}"></canvas>
-            </div>
-          </div>
-        `;
-        
-        setTimeout(() => {
-          const ctx = document.getElementById(scatterCanvasId).getContext('2d');
-          new Chart(ctx, {
-            type: 'scatter',
-            data: {
-              datasets: [{
-                label: 'Trades',
-                data: data.map(trade => ({
-                  x: trade.rr,
-                  y: trade.result === "Win" ? 1 : 0,
-                })),
-                backgroundColor: data.map(t => t.result === "Win" ? '#27ae60' : '#e74c3c'),
-              }]
-            },
-            options: {
-              scales: {
-                x: { title: { display: true, text: 'Risk:Reward' } },
-                y: { 
-                  ticks: { callback: val => val === 1 ? 'Win' : 'Loss' },
-                  title: { display: true, text: 'Result' } 
-                }
-              }
-            }
-          });
-        }, 100);
+      window.onload = function() {
+        renderStats();
+        renderTable();
       }
     </script>
   </body>
