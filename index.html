@@ -111,7 +111,6 @@
     const h4 = document.getElementById("h4").value;
     const h1 = document.getElementById("h1").value;
     const zone = document.getElementById("zone").value;
-    const zoneTimeframe = document.getElementById("zoneTimeframe").value;
     const entry = parseFloat(document.getElementById("entry").value);
     const sl = parseFloat(document.getElementById("sl").value);
     const tp = parseFloat(document.getElementById("tp").value);
@@ -124,15 +123,14 @@
     const rr = Math.abs(tp - entry) / Math.abs(sl - entry);
     const slSize = Math.abs(sl - entry);
 
-    trades.push({ pair, h4, h1, zone, zoneTimeframe, entry, sl, tp, rr, slSize, date, result, notes });
+    trades.push({ pair, h4, h1, zone, entry, sl, tp, rr, slSize, date, result, notes });
     localStorage.setItem("trades", JSON.stringify(trades));
-    alert("Trade saved successfully");
+    alert("Trade saved");
     renderStats();
-    renderTable();
   }
 
   function exportToCSV() {
-    if (!trades.length) return alert("No trades to export");
+    if (trades.length === 0) return alert("No trades to export");
     const headers = Object.keys(trades[0]).join(",");
     const rows = trades.map(t => Object.values(t).join(","));
     const csvContent = [headers, ...rows].join("\n");
@@ -141,51 +139,39 @@
     link.href = URL.createObjectURL(blob);
     link.download = "trades.csv";
     link.click();
-  }
-
-  function importFromCSV() {
-    const fileInput = document.getElementById("csvFile");
-    const file = fileInput.files[0];
-    if (!file) return alert("Please select a CSV file.");
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const content = e.target.result;
-      const lines = content.trim().split("\n");
-      const keys = lines[0].split(",");
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(",");
-        const obj = {};
-        keys.forEach((key, j) => { obj[key] = isNaN(values[j]) ? values[j] : parseFloat(values[j]); });
-        trades.push(obj);
-      }
-      localStorage.setItem("trades", JSON.stringify(trades));
-      renderStats();
-      renderTable();
-    };
-    reader.readAsText(file);
-  }
-
-  function renderTable() {
-    const container = document.getElementById("entriesTable");
-    if (!trades.length) return container.innerHTML = "<p>No trades to display</p>";
-    let html = "<table><thead><tr>";
-    const keys = Object.keys(trades[0]);
-    keys.forEach(k => html += `<th>${k}</th>`);
-    html += "</tr></thead><tbody>";
-    trades.forEach(t => {
-      html += "<tr>" + keys.map(k => `<td>${t[k]}</td>`).join("") + "</tr>";
-    });
-    html += "</tbody></table>";
-    container.innerHTML = html;
+    alert("CSV downloaded successfully");
   }
 
   function renderStats() {
     const statsContainer = document.getElementById("monthlyStats");
     statsContainer.innerHTML = "";
-    const statsMap = {};
 
-    trades.forEach(trade => {
+    const filterHtml = `
+      <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+        <select id="filterPair" style="flex: 1">
+          <option value="">All Pairs</option>
+          ${[...new Set(trades.map(t => t.pair))].map(p => `<option value="${p}">${p}</option>`).join("")}
+        </select>
+        <input type="date" id="filterStart" style="flex: 1">
+        <input type="date" id="filterEnd" style="flex: 1">
+        <button onclick="renderStats()" style="flex: 1; background: #2980b9;">Apply Filters</button>
+      </div>
+    `;
+    statsContainer.innerHTML += filterHtml;
+
+    const filterPair = document.getElementById("filterPair")?.value || "";
+    const startDate = document.getElementById("filterStart")?.value;
+    const endDate = document.getElementById("filterEnd")?.value;
+
+    const filteredTrades = trades.filter(t => {
+      if (filterPair && t.pair !== filterPair) return false;
+      if (startDate && new Date(t.date) < new Date(startDate)) return false;
+      if (endDate && new Date(t.date) > new Date(endDate)) return false;
+      return true;
+    });
+
+    const statsMap = {};
+    filteredTrades.forEach(trade => {
       const date = new Date(trade.date);
       const monthLabel = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
       const key = `${trade.pair}_${monthLabel}`;
@@ -222,14 +208,26 @@
       }
 
       const canvasId = `chart_${key.replace(/\s+/g, '_')}`;
+
       statsContainer.innerHTML += `
         <div class="stats-card">
           <h3>${pair} - ${month}</h3>
           <p><strong>Setups:</strong> ${setupCount}</p>
           <p><strong>Wins:</strong> ${wins}</p>
           <p><strong>Win Rate:</strong> ${winRate}%</p>
-          <p><strong>Average R:R:</strong> ${(rrSum / setupCount).toFixed(2)}</p>
+          <p><strong>Average R:R:</strong> 1:${(rrSum / setupCount).toFixed(2)}</p>
           <p><strong>Best Trading Day:</strong> ${bestDay}</p>
+          <ul>
+            ${data.map(t => `
+              <li>
+                <strong>Date:</strong> ${t.date} | 
+                <strong>Result:</strong> ${t.result} | 
+                <strong>RR:</strong> 1:${t.rr.toFixed(2)} | 
+                <strong>SL Size:</strong> ${t.slSize.toFixed(2)} | 
+                <strong>Note:</strong> ${t.notes}
+              </li>
+            `).join("")}
+          </ul>
           <div class="chart-container">
             <canvas id="${canvasId}"></canvas>
           </div>
@@ -256,11 +254,12 @@
     }
   }
 
-  window.onload = function() {
-    renderStats();
-    renderTable();
+  // Stub for success message when importing CSV (assuming later feature)
+  function importCSVSuccess() {
+    alert("CSV imported successfully");
   }
-</script>
 
+  window.onload = renderStats;
+</script>
   </body>
 </html>
