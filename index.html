@@ -388,6 +388,8 @@
       // Fixed table rendering function
       function renderTable() {
         const container = document.getElementById("entriesTable");
+        container.innerHTML = ""; // Clear container
+        
         if (!trades.length) {
           container.innerHTML = "<p>No trades to display</p>";
           return;
@@ -414,13 +416,16 @@
         
         let html = "<table><thead><tr>";
         const keys = Object.keys(filteredTrades[0]);
+        
+        // Create table headers
         keys.forEach(k => html += `<th>${k}</th>`);
         html += "</tr></thead><tbody>";
         
+        // Create table rows
         filteredTrades.forEach(t => {
           html += "<tr>";
           keys.forEach(k => {
-            // Format RR as ratio only for display
+            // Format RR for display but keep original value
             if (k === 'rr') {
               html += `<td>${formatRR(t[k])}</td>`;
             } else {
